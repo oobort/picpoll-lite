@@ -94,6 +94,9 @@ class Vote_Game_Plugin {
 
     /* === Activation === */
     public function on_activate() {
+        // Suppress any output during activation
+        ob_start();
+        
         $this->create_tables();
         $opts = get_option('vg_options', array());
         if (empty($opts['regions_json'])) {
@@ -112,12 +115,18 @@ class Vote_Game_Plugin {
             $opts['region_mode'] = 'prompt';
         }
         update_option('vg_options', $opts);
+        
+        // Clean any output buffer
+        ob_end_clean();
     }
 
     private function create_tables() {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        // Suppress any output during table creation
+        $wpdb->hide_errors();
 
         $sql1 = "CREATE TABLE {$this->table} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -150,6 +159,8 @@ class Vote_Game_Plugin {
             PRIMARY KEY (country, image_id, option_index)
         ) $charset_collate;";
         dbDelta($sql3);
+
+        $wpdb->show_errors();
     }
 
     /* === Content Model === */
