@@ -648,72 +648,6 @@ class Vote_Game_Plugin {
             wp_enqueue_script('vg-admin-js', plugins_url('assets/vg-admin.js', __FILE__), array('jquery'), @filemtime(__DIR__.'/assets/vg-admin.js'), true);
             wp_enqueue_style('vg-front', plugins_url('assets/embeddable.css', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.css'));
             wp_enqueue_script('vg-front', plugins_url('assets/embeddable.js', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.js'), true);
-
-        // Unique scope class and style variables
-        $scope = 'fvg-scope-' . wp_generate_uuid4();
-        $bar_h  = isset($o['bar_height']) ? intval($o['bar_height']) : 12;
-        $radius = isset($o['card_radius']) ? intval($o['card_radius']) : 16;
-        $title  = isset($o['title_size']) ? intval($o['title_size']) : 18;
-        $border = isset($o['border_thickness']) ? intval($o['border_thickness']) : 4;
-        $font   = isset($o['font_family']) ? $o['font_family'] : '';
-
-        // Build HTML
-        $style  = '<style>.' . esc_attr($scope) . ' { --fvg-accent: ' . esc_html($brand_color) . '; --fvg-bar-h: ' . esc_html($bar_h) . 'px; --fvg-card-radius: ' . esc_html($radius) . 'px; --fvg-title-size: ' . esc_html($title) . 'px; --fvg-border-thickness: ' . esc_html($border) . 'px; }';
-        if (!empty($font)) { $style .= '.' . esc_attr($scope) . ' .fvg-wrap{ font-family: ' . esc_html($font) . '; }'; }
-        $style .= '</style>';
-
-        $div  = '<div class="fvg-embed"';
-        $div .= ' data-scope="' . esc_attr($scope) . '"';
-        $div .= ' data-limit="' . esc_attr(intval($atts['limit'])) . '"';
-        $div .= ' data-random="' . esc_attr(intval($atts['random'])) . '"';
-        $div .= ' data-brand-color="' . esc_attr($brand_color) . '"';
-        $div .= ' data-category="' . esc_attr($atts['category']) . '"';
-        $div .= ' data-show-excerpt="' . esc_attr(intval($atts['show_excerpt'])) . '" data-region-mode="prompt"';
-        $div .= ' data-regions="' . esc_attr(wp_json_encode($regions_map)) . '">';
-        $div .= '<div class="fvg-loading" style="padding:12px;color:#555;">Loading...</div>';
-        $div .= '</div>';
-
-        $api  = esc_js(esc_url_raw(get_rest_url(null, 'vote-game/v1/')));
-        $ajax = esc_js(admin_url('admin-ajax.php'));
-        $script_cfg = '<script>window.FVG_SHORTCODE_CFG=window.FVG_SHORTCODE_CFG||{};(function(cfg){cfg.api="' . $api . '"; cfg.ajax="' . $ajax . '";})(window.FVG_SHORTCODE_CFG);</script>';
-
-        // Options JSON
-        $labels = $this->get_option_labels();
-        $opts_out = array(
-            'title_size'   => isset($o['title_size']) ? intval($o['title_size']) : 18,
-            'min_sample'   => 0,
-            'hide_everyone'=> 0,
-            'font_family'  => isset($o['font_family']) ? $o['font_family'] : '',
-            'option_labels'=> $labels,
-            'region_mode' => 'prompt',
-        );
-        $__vg_json = wp_json_encode($opts_out);
-        $script_opts = '<script id="vg-options-json" type="application/json">'.$__vg_json.'</script>';
-
-        return $style . $div . $script_cfg . $script_opts;
-    }
-
-    private function get_ip() {
-        foreach (array('HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR') as $k) {
-            if (!empty($_SERVER[$k])) {
-                $ip_list = explode(',', $_SERVER[$k]);
-                return trim($ip_list[0]);
-            }
-        }
-        return '';
-    }
-    private function get_ip() {
-        foreach (array('HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR') as $k) {
-            if (!empty($_SERVER[$k])) {
-                $ip_list = explode(',', $_SERVER[$k]);
-                return trim($ip_list[0]);
-            }
-        }
-        return '';
-    }
-}
-
-Vote_Game_Plugin::instance();__), array(), @filemtime(__DIR__.'/assets/embeddable.js'), true);
         }
     }
 
@@ -1058,4 +992,61 @@ Vote_Game_Plugin::instance();__), array(), @filemtime(__DIR__.'/assets/embeddabl
 
         // Enqueue assets only here
         wp_enqueue_style('vg-front', plugins_url('assets/embeddable.css', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.css'));
-        wp_enqueue_script('vg-front', plugins_url('assets/embeddable.js', __FILE
+        wp_enqueue_script('vg-front', plugins_url('assets/embeddable.js', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.js'), true);
+
+        // Unique scope class and style variables
+        $scope = 'fvg-scope-' . wp_generate_uuid4();
+        $bar_h  = isset($o['bar_height']) ? intval($o['bar_height']) : 12;
+        $radius = isset($o['card_radius']) ? intval($o['card_radius']) : 16;
+        $title  = isset($o['title_size']) ? intval($o['title_size']) : 18;
+        $border = isset($o['border_thickness']) ? intval($o['border_thickness']) : 4;
+        $font   = isset($o['font_family']) ? $o['font_family'] : '';
+
+        // Build HTML
+        $style  = '<style>.' . esc_attr($scope) . ' { --fvg-accent: ' . esc_html($brand_color) . '; --fvg-bar-h: ' . esc_html($bar_h) . 'px; --fvg-card-radius: ' . esc_html($radius) . 'px; --fvg-title-size: ' . esc_html($title) . 'px; --fvg-border-thickness: ' . esc_html($border) . 'px; }';
+        if (!empty($font)) { $style .= '.' . esc_attr($scope) . ' .fvg-wrap{ font-family: ' . esc_html($font) . '; }'; }
+        $style .= '</style>';
+
+        $div  = '<div class="fvg-embed"';
+        $div .= ' data-scope="' . esc_attr($scope) . '"';
+        $div .= ' data-limit="' . esc_attr(intval($atts['limit'])) . '"';
+        $div .= ' data-random="' . esc_attr(intval($atts['random'])) . '"';
+        $div .= ' data-brand-color="' . esc_attr($brand_color) . '"';
+        $div .= ' data-category="' . esc_attr($atts['category']) . '"';
+        $div .= ' data-show-excerpt="' . esc_attr(intval($atts['show_excerpt'])) . '" data-region-mode="prompt"';
+        $div .= ' data-regions="' . esc_attr(wp_json_encode($regions_map)) . '">';
+        $div .= '<div class="fvg-loading" style="padding:12px;color:#555;">Loading...</div>';
+        $div .= '</div>';
+
+        $api  = esc_js(esc_url_raw(get_rest_url(null, 'vote-game/v1/')));
+        $ajax = esc_js(admin_url('admin-ajax.php'));
+        $script_cfg = '<script>window.FVG_SHORTCODE_CFG=window.FVG_SHORTCODE_CFG||{};(function(cfg){cfg.api="' . $api . '"; cfg.ajax="' . $ajax . '";})(window.FVG_SHORTCODE_CFG);</script>';
+
+        // Options JSON
+        $labels = $this->get_option_labels();
+        $opts_out = array(
+            'title_size'   => isset($o['title_size']) ? intval($o['title_size']) : 18,
+            'min_sample'   => 0,
+            'hide_everyone'=> 0,
+            'font_family'  => isset($o['font_family']) ? $o['font_family'] : '',
+            'option_labels'=> $labels,
+            'region_mode' => 'prompt',
+        );
+        $__vg_json = wp_json_encode($opts_out);
+        $script_opts = '<script id="vg-options-json" type="application/json">'.$__vg_json.'</script>';
+
+        return $style . $div . $script_cfg . $script_opts;
+    }
+
+    private function get_ip() {
+        foreach (array('HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR') as $k) {
+            if (!empty($_SERVER[$k])) {
+                $ip_list = explode(',', $_SERVER[$k]);
+                return trim($ip_list[0]);
+            }
+        }
+        return '';
+    }
+}
+
+Vote_Game_Plugin::instance();
