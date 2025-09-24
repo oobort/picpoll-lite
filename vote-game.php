@@ -702,6 +702,15 @@ class Vote_Game_Plugin {
         }
         return '';
     }
+    private function get_ip() {
+        foreach (array('HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR') as $k) {
+            if (!empty($_SERVER[$k])) {
+                $ip_list = explode(',', $_SERVER[$k]);
+                return trim($ip_list[0]);
+            }
+        }
+        return '';
+    }
 }
 
 Vote_Game_Plugin::instance();__), array(), @filemtime(__DIR__.'/assets/embeddable.js'), true);
