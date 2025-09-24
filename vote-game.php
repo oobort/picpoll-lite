@@ -4,6 +4,8 @@
  * Description: Flexible photo voting game with regions, categories, dynamic vote options, styling options, and a shortcode builder.
  * Version: 1.8.12
  * Author: LeadMuffin
+ * Author URI: https://leadmuffin.com/plugins
+ * Plugin URI: https://leadmuffin.com/plugins
  * License: GPLv2 or later
  */
 
