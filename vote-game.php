@@ -64,13 +64,18 @@ class Vote_Game_Plugin {
         $opts = get_option('vg_options', array());
         if (empty($opts['regions_json'])) {
             $opts['regions_json'] = json_encode(array(
-                array('code'=>'AS','label'=>'Asia'),
-                array('code'=>'EU','label'=>'Europe'),
-                array('code'=>'NA','label'=>'North America'),
+                array('code'=>'US','label'=>'United States'),
+                array('code'=>'CA','label'=>'Canada'),
+                array('code'=>'UK','label'=>'United Kingdom'),
+                array('code'=>'JP','label'=>'Japan'),
             ));
         }
         if (empty($opts['option_labels_json'])) {
             $opts['option_labels_json'] = json_encode(array(array('text'=>'Vote Option 1')));
+        }
+        // Set default region mode to prompt
+        if (!isset($opts['region_mode'])) {
+            $opts['region_mode'] = 'prompt';
         }
         update_option('vg_options', $opts);
     }
@@ -355,6 +360,9 @@ class Vote_Game_Plugin {
         add_submenu_page('vg_settings', __('Vote Options','vote-game'), __('Vote Options','vote-game'), 'manage_options', 'vg_options', array($this, 'render_vote_options'));
         add_submenu_page('vg_settings', __('Shortcode Builder','vote-game'), __('Shortcode Builder','vote-game'), 'manage_options', 'vg_builder', array($this, 'render_shortcode_builder'));
         add_submenu_page('vg_settings', __('Results & Adjustments','vote-game'), __('Results & Adjustments','vote-game'), 'manage_options', 'vg_results', array($this, 'render_results_adjustments'));
+        
+        // Add PicPoll Pro upgrade page
+        add_submenu_page('vg_settings', __('PicPoll Pro','vote-game'), __('PicPoll Pro','vote-game'), 'manage_options', 'vg_pro', array($this, 'render_pro_upgrade'));
     }
 
     public function render_items_page() {
@@ -627,41 +635,9 @@ class Vote_Game_Plugin {
             echo '<input type="text" name="vg_options[font_family]" value="'.esc_attr($val).'" class="regular-text" placeholder="e.g., Inter, system-ui" />';
         }, 'vg_settings', 'vg_styling');
 
-        // Behavior
-        add_settings_section('vg_behavior', __('Working Options','vote-game'), function(){ echo '<p>Control how the game behaves.</p>'; }, 'vg_behavior');
-        add_settings_field('unique_ip', __('Limit one vote per image per IP','vote-game'), function(){
-            $o = get_option('vg_options', array()); $checked = !isset($o['unique_ip']) || intval($o['unique_ip']) ? 'checked' : '';
-            echo '<label><input type="checkbox" name="vg_options[unique_ip]" value="1" '.$checked.'> '.__('Enabled','vote-game').'</label>';
-        }, 'vg_behavior', 'vg_behavior');
-        add_settings_field('require_login', __('Require login to vote','vote-game'), function(){
-            $o = get_option('vg_options', array()); $checked = !empty($o['require_login']) ? 'checked' : '';
-            echo '<label><input type="checkbox" name="vg_options[require_login]" value="1" '.$checked.'> '.__('Enabled','vote-game').'</label>';
-        }, 'vg_behavior', 'vg_behavior');
-        add_settings_field('min_sample', __('Minimum sample size to show results','vote-game'), function(){
-            $o = get_option('vg_options', array()); $val = isset($o['min_sample']) ? intval($o['min_sample']) : 0;
-            echo '<input type="number" name="vg_options[min_sample]" value="'.esc_attr($val).'" min="0" max="10000" />';
-        }, 'vg_behavior', 'vg_behavior');
-        add_settings_field('region_mode', __('Region mode','vote-game'), function(){
-            $o = get_option('vg_options', array()); $val = isset($o['region_mode']) ? $o['region_mode'] : 'none';
-            $regions_url = admin_url('admin.php?page=vg_regions');
-            echo '<select name="vg_options[region_mode]">'
-               .'<option value="none"'.selected($val,'none',false).'>None (no auto region)</option>'
-               .'<option value="cloudflare"'.selected($val,'cloudflare',false).'>Cloudflare header (HTTP_CF_IPCOUNTRY)</option>'
-               .'<option value="prompt"'.selected($val,'prompt',false).'>Prompt user at start</option>'
-               .'</select>';
-            echo '<p class="description">';
-            echo '<strong>Note:</strong> If using Cloudflare header mode, you must register two-letter ISO 3166-1 country codes (like US, GB, DE, JP) in the ';
-            echo '<a href="'.esc_url($regions_url).'">Regions tab</a> instead of continental regions.';
-            echo '</p>';
-        }, 'vg_behavior', 'vg_behavior');
-        add_settings_field('hide_everyone', __('Hide "Everyone" row in results','vote-game'), function(){
-            $o = get_option('vg_options', array()); $checked = !empty($o['hide_everyone']) ? 'checked' : '';
-            echo '<label><input type="checkbox" name="vg_options[hide_everyone]" value="1" '.$checked.'> '.__('Hide','vote-game').'</label>';
-        }, 'vg_behavior', 'vg_behavior');
-
-        // Regions
+        // Regions - Fixed region options
         add_settings_section('vg_regions', __('Regions','vote-game'), function(){
-            echo '<p>Define region codes and labels. Use the form below to add/remove regions.</p>';
+            echo '<p>Region selection is configured for US, Canada, United Kingdom, and Japan.</p>';
         }, 'vg_regions');
         add_settings_field('regions_json', __('Regions list','vote-game'), array($this, 'render_regions_field'), 'vg_regions', 'vg_regions');
     }
@@ -672,6 +648,63 @@ class Vote_Game_Plugin {
             wp_enqueue_script('vg-admin-js', plugins_url('assets/vg-admin.js', __FILE__), array('jquery'), @filemtime(__DIR__.'/assets/vg-admin.js'), true);
             wp_enqueue_style('vg-front', plugins_url('assets/embeddable.css', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.css'));
             wp_enqueue_script('vg-front', plugins_url('assets/embeddable.js', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.js'), true);
+
+        // Unique scope class and style variables
+        $scope = 'fvg-scope-' . wp_generate_uuid4();
+        $bar_h  = isset($o['bar_height']) ? intval($o['bar_height']) : 12;
+        $radius = isset($o['card_radius']) ? intval($o['card_radius']) : 16;
+        $title  = isset($o['title_size']) ? intval($o['title_size']) : 18;
+        $border = isset($o['border_thickness']) ? intval($o['border_thickness']) : 4;
+        $font   = isset($o['font_family']) ? $o['font_family'] : '';
+
+        // Build HTML
+        $style  = '<style>.' . esc_attr($scope) . ' { --fvg-accent: ' . esc_html($brand_color) . '; --fvg-bar-h: ' . esc_html($bar_h) . 'px; --fvg-card-radius: ' . esc_html($radius) . 'px; --fvg-title-size: ' . esc_html($title) . 'px; --fvg-border-thickness: ' . esc_html($border) . 'px; }';
+        if (!empty($font)) { $style .= '.' . esc_attr($scope) . ' .fvg-wrap{ font-family: ' . esc_html($font) . '; }'; }
+        $style .= '</style>';
+
+        $div  = '<div class="fvg-embed"';
+        $div .= ' data-scope="' . esc_attr($scope) . '"';
+        $div .= ' data-limit="' . esc_attr(intval($atts['limit'])) . '"';
+        $div .= ' data-random="' . esc_attr(intval($atts['random'])) . '"';
+        $div .= ' data-brand-color="' . esc_attr($brand_color) . '"';
+        $div .= ' data-category="' . esc_attr($atts['category']) . '"';
+        $div .= ' data-show-excerpt="' . esc_attr(intval($atts['show_excerpt'])) . '" data-region-mode="prompt"';
+        $div .= ' data-regions="' . esc_attr(wp_json_encode($regions_map)) . '">';
+        $div .= '<div class="fvg-loading" style="padding:12px;color:#555;">Loading...</div>';
+        $div .= '</div>';
+
+        $api  = esc_js(esc_url_raw(get_rest_url(null, 'vote-game/v1/')));
+        $ajax = esc_js(admin_url('admin-ajax.php'));
+        $script_cfg = '<script>window.FVG_SHORTCODE_CFG=window.FVG_SHORTCODE_CFG||{};(function(cfg){cfg.api="' . $api . '"; cfg.ajax="' . $ajax . '";})(window.FVG_SHORTCODE_CFG);</script>';
+
+        // Options JSON
+        $labels = $this->get_option_labels();
+        $opts_out = array(
+            'title_size'   => isset($o['title_size']) ? intval($o['title_size']) : 18,
+            'min_sample'   => 0,
+            'hide_everyone'=> 0,
+            'font_family'  => isset($o['font_family']) ? $o['font_family'] : '',
+            'option_labels'=> $labels,
+            'region_mode' => 'prompt',
+        );
+        $__vg_json = wp_json_encode($opts_out);
+        $script_opts = '<script id="vg-options-json" type="application/json">'.$__vg_json.'</script>';
+
+        return $style . $div . $script_cfg . $script_opts;
+    }
+
+    private function get_ip() {
+        foreach (array('HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR') as $k) {
+            if (!empty($_SERVER[$k])) {
+                $ip_list = explode(',', $_SERVER[$k]);
+                return trim($ip_list[0]);
+            }
+        }
+        return '';
+    }
+}
+
+Vote_Game_Plugin::instance();__), array(), @filemtime(__DIR__.'/assets/embeddable.js'), true);
         }
     }
 
@@ -701,48 +734,23 @@ class Vote_Game_Plugin {
 
     public function render_regions_field() {
         $o = get_option('vg_options', array());
-        $json = isset($o['regions_json']) && $o['regions_json'] ? $o['regions_json'] : '[]';
+        $json = isset($o['regions_json']) && $o['regions_json'] ? $o['regions_json'] : json_encode(array(
+            array('code'=>'US','label'=>'United States'),
+            array('code'=>'CA','label'=>'Canada'),
+            array('code'=>'UK','label'=>'United Kingdom'),
+            array('code'=>'JP','label'=>'Japan'),
+        ));
         echo '<input type="hidden" id="vg_regions_json" name="vg_options[regions_json]" value="'.esc_attr($json).'">';
-        echo '<div id="vg-regions-ui"></div>';
-        echo '<p class="description">'.__('Add code & label, then click + to add more.','vote-game').'</p>';
-        echo '<script type="text/template" id="vg-region-row-tpl">
-            <div class="vg-row">
-              <input class="vg-code" type="text" placeholder="Code (e.g., AS)" maxlength="10">
-              <input class="vg-label" type="text" placeholder="Label (e.g., Asia)">
-              <button type="button" class="button vg-add">+</button>
-              <button type="button" class="button vg-del">−</button>
-            </div>
-        </script>';
-        echo '<script>
-        (function(){
-            function parseJSON(s){try{return JSON.parse(s||"[]")}catch(e){return []}}
-            var input = document.getElementById("vg_regions_json");
-            var data = parseJSON(input.value);
-            var host = document.getElementById("vg-regions-ui");
-            function row(code,label){
-                var tpl = document.getElementById("vg-region-row-tpl").textContent;
-                var div = document.createElement("div"); div.innerHTML = tpl.trim();
-                var el = div.firstChild;
-                el.querySelector(".vg-code").value = code||"";
-                el.querySelector(".vg-label").value = label||"";
-                el.querySelector(".vg-add").addEventListener("click", function(){ host.appendChild(row("","")); sync(); });
-                el.querySelector(".vg-del").addEventListener("click", function(){ el.remove(); sync(); });
-                el.querySelector(".vg-code").addEventListener("input", sync);
-                el.querySelector(".vg-label").addEventListener("input", sync);
-                return el;
-            }
-            function sync(){
-                var arr = []; host.querySelectorAll(".vg-row").forEach(function(r){
-                    var c=r.querySelector(".vg-code").value.trim(), l=r.querySelector(".vg-label").value.trim();
-                    if (c && l) arr.push({code:c, label:l});
-                });
-                input.value = JSON.stringify(arr);
-            }
-            host.innerHTML = "";
-            if (!data.length) data = [{code:"AS",label:"Asia"}];
-            data.forEach(function(it){ host.appendChild(row(it.code, it.label)); });
-        })();
-        </script>';
+        echo '<div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 6px;">';
+        echo '<p><strong>Fixed Regions:</strong></p>';
+        echo '<ul style="margin: 0; padding-left: 20px;">';
+        echo '<li>US - United States</li>';
+        echo '<li>CA - Canada</li>';
+        echo '<li>UK - United Kingdom</li>';
+        echo '<li>JP - Japan</li>';
+        echo '</ul>';
+        echo '<p style="margin-top: 10px; color: #666; font-style: italic;">Region mode is set to "Prompt user at start"</p>';
+        echo '</div>';
     }
 
     public function sanitize_options($opts) {
@@ -756,18 +764,21 @@ class Vote_Game_Plugin {
         if (isset($opts['border_thickness'])) $out['border_thickness'] = max(0, min(20, intval($opts['border_thickness'])));
         if (isset($opts['font_family']))  $out['font_family'] = sanitize_text_field($opts['font_family']);
 
-        // Checkboxes: only update when present in the submitted form
-        if (array_key_exists('unique_ip', $opts))      $out['unique_ip'] = intval($opts['unique_ip']) ? 1 : 0;
-        if (array_key_exists('require_login', $opts))  $out['require_login'] = intval($opts['require_login']) ? 1 : 0;
-        if (array_key_exists('hide_everyone', $opts))  $out['hide_everyone'] = intval($opts['hide_everyone']) ? 1 : 0;
-        if (isset($opts['region_mode'])) {
-            $rm = in_array($opts['region_mode'], array('none','cloudflare','prompt'), true) ? $opts['region_mode'] : 'none';
-            $out['region_mode'] = $rm;
-        }
+        // Force specific settings
+        $out['unique_ip'] = 1;
+        $out['require_login'] = 0;
+        $out['hide_everyone'] = 0;
+        $out['region_mode'] = 'prompt';
+        $out['min_sample'] = 0;
 
-        if (isset($opts['min_sample'])) $out['min_sample'] = max(0, intval($opts['min_sample']));
+        // Force specific regions
+        $out['regions_json'] = json_encode(array(
+            array('code'=>'US','label'=>'United States'),
+            array('code'=>'CA','label'=>'Canada'),
+            array('code'=>'UK','label'=>'United Kingdom'),
+            array('code'=>'JP','label'=>'Japan'),
+        ));
 
-        if (isset($opts['regions_json'])) $out['regions_json'] = wp_kses_post($opts['regions_json']);
         if (isset($opts['option_labels_json'])) $out['option_labels_json'] = wp_kses_post($opts['option_labels_json']);
         if (empty($out['option_labels_json'])) $out['option_labels_json'] = json_encode(array(array('text'=>'Vote Option 1')));
         if (!isset($out['border_thickness'])) $out['border_thickness'] = 4;
@@ -783,10 +794,12 @@ class Vote_Game_Plugin {
     }
     
     public function render_settings_behavior() {
-        echo '<div class="wrap"><h1>'.esc_html__('Working Options','vote-game').'</h1>';
-        echo '<form method="post" action="options.php">';
-        settings_fields('vg_options'); do_settings_sections('vg_behavior'); submit_button();
-        echo '</form></div>';
+        echo '<div class="wrap">';
+        echo '<h1>'.esc_html__('Behavior Settings','vote-game').'</h1>';
+        echo '<div style="text-align: center; padding: 40px;">';
+        echo '<img src="'.plugins_url('assets/behavior.png', __FILE__).'" alt="Behavior Settings" style="max-width: 100%; height: auto;" />';
+        echo '</div>';
+        echo '</div>';
     }
     
     public function render_settings_regions() {
@@ -846,66 +859,23 @@ class Vote_Game_Plugin {
     }
 
     public function render_items_upload() {
-        if (!current_user_can('manage_options')) return;
-        if (!empty($_POST['vg_upload_nonce']) && wp_verify_nonce($_POST['vg_upload_nonce'], 'vg_upload')) {
-            $this->handle_items_upload();
-        }
-        echo '<div class="wrap"><h1>'.esc_html__('Bulk Upload','vote-game').'</h1>';
-        echo '<form method="post" enctype="multipart/form-data">';
-        wp_nonce_field('vg_upload', 'vg_upload_nonce');
-        echo '<p><label>'.__('CSV file','vote-game').': <input type="file" name="vg_csv" accept=".csv" required></label></p>';
-        echo '<p class="description">'.__('Columns: title,image_url,category_slugs (comma),excerpt','vote-game').'</p>';
-        submit_button(__('Upload','vote-game'));
-        echo '</form></div>';
-    }
-
-    private function handle_items_upload() {
-        if (empty($_FILES['vg_csv']['tmp_name'])) { echo '<div class="notice notice-error"><p>No file.</p></div>'; return; }
-        $fh = fopen($_FILES['vg_csv']['tmp_name'], 'r');
-        if (!$fh) { echo '<div class="notice notice-error"><p>Could not open file.</p></div>'; return; }
-        $count = 0; $created = 0;
-        require_once ABSPATH . 'wp-admin/includes/media.php';
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        require_once ABSPATH . 'wp-admin/includes/image.php';
-
-        while (($row = fgetcsv($fh)) !== false) {
-            $count++;
-            if ($count == 1 && preg_match('/title/i', $row[0])) { continue; } // header
-            $title = sanitize_text_field($row[0] ?? '');
-            $img   = esc_url_raw($row[1] ?? '');
-            $cats  = sanitize_text_field($row[2] ?? '');
-            $ex    = sanitize_textarea_field($row[3] ?? '');
-            if (!$title) continue;
-
-            $post_id = wp_insert_post(array(
-                'post_type'   => 'vote_item',
-                'post_title'  => $title,
-                'post_status' => 'publish',
-                'post_excerpt'=> $ex,
-            ));
-            if (is_wp_error($post_id)) continue;
-            if ($cats) {
-                $slugs = array_filter(array_map('trim', explode(',', $cats)));
-                if (!empty($slugs)) wp_set_object_terms($post_id, $slugs, 'vote_category', false);
-            }
-            if ($img) {
-                $att_id = media_sideload_image($img, $post_id, $title, 'id');
-                if (!is_wp_error($att_id)) set_post_thumbnail($post_id, $att_id);
-            }
-            $created++;
-        }
-        fclose($fh);
-        echo '<div class="notice notice-success"><p>'.esc_html($created).' items created.</p></div>';
+        echo '<div class="wrap">';
+        echo '<h1>'.esc_html__('Bulk Upload','vote-game').'</h1>';
+        echo '<div style="text-align: center; padding: 40px;">';
+        echo '<img src="'.plugins_url('assets/bulk.png', __FILE__).'" alt="Bulk Upload" style="max-width: 100%; height: auto;" />';
+        echo '</div>';
+        echo '</div>';
     }
 
     public function render_shortcode_builder() {
         if (!current_user_can('manage_options')) return;
         $o = get_option('vg_options', array());
-        $regions = array();
-        if (!empty($o['regions_json'])) {
-            $tmp = json_decode($o['regions_json'], true);
-            if (is_array($tmp)) $regions = $tmp;
-        }
+        $regions = array(
+            array('code'=>'US','label'=>'United States'),
+            array('code'=>'CA','label'=>'Canada'),
+            array('code'=>'UK','label'=>'United Kingdom'),
+            array('code'=>'JP','label'=>'Japan'),
+        );
         $cats = get_terms(array('taxonomy'=>'vote_category','hide_empty'=>false));
         echo '<div class="wrap"><h1>'.esc_html__('Shortcode Builder','vote-game').'</h1>';
         echo '<div class="card" style="max-width:880px;padding:16px;">';
@@ -925,13 +895,9 @@ class Vote_Game_Plugin {
         }
         echo '</td></tr>';
         echo '<tr><th>Regions to include</th><td>';
-        if ($regions) {
-            foreach ($regions as $r) {
-                $code = esc_html($r['code']); $label = esc_html($r['label']);
-                echo '<label style="display:inline-block;margin-right:12px;"><input type="checkbox" class="b_region" value="'.$code.'"> '.$label.' ('.$code.')</label>';
-            }
-        } else {
-            echo '<em>No regions defined yet. Add some in the Regions tab.</em>';
+        foreach ($regions as $r) {
+            $code = esc_html($r['code']); $label = esc_html($r['label']);
+            echo '<label style="display:inline-block;margin-right:12px;"><input type="checkbox" class="b_region" value="'.$code.'"> '.$label.' ('.$code.')</label>';
         }
         echo '</td></tr>';
         echo '</tbody></table>';
@@ -982,6 +948,71 @@ class Vote_Game_Plugin {
         echo '</div>';
     }
 
+    public function render_results_adjustments() {
+        echo '<div class="wrap">';
+        echo '<h1>'.esc_html__('Results & Adjustments','vote-game').'</h1>';
+        echo '<div style="text-align: center; padding: 40px;">';
+        echo '<img src="'.plugins_url('assets/adjustments.png', __FILE__).'" alt="Results & Adjustments" style="max-width: 100%; height: auto;" />';
+        echo '</div>';
+        echo '</div>';
+    }
+
+    public function render_pro_upgrade() {
+        echo '<div class="wrap">';
+        echo '<h1 style="color: #2d3748; font-weight: 600; margin-bottom: 30px;">PicPoll Pro</h1>';
+        
+        echo '<div class="card" style="max-width: 800px; padding: 30px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">';
+        echo '<h2 style="color: white; font-size: 28px; margin-bottom: 10px;">Upgrade to PicPoll Pro</h2>';
+        echo '<p style="font-size: 18px; color: rgba(255,255,255,0.9); margin-bottom: 20px;">Unlock powerful features to enhance your voting games</p>';
+        echo '<div style="font-size: 48px; font-weight: bold; margin: 20px 0; color: #ffd700;">$9.99</div>';
+        echo '<p style="font-size: 16px; color: rgba(255,255,255,0.8); margin-bottom: 30px;">One-time payment • Lifetime updates</p>';
+        echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" class="button" style="background: #ffd700; color: #333; border: none; padding: 15px 30px; font-size: 18px; font-weight: 600; border-radius: 50px; text-decoration: none; display: inline-block; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255,215,0,0.3);">Upgrade Now →</a>';
+        echo '</div>';
+        
+        echo '<div class="card" style="max-width: 800px; padding: 25px; margin-top: 20px;">';
+        echo '<h3 style="color: #2d3748; font-size: 22px; margin-bottom: 20px; text-align: center;">Pro Features</h3>';
+        echo '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">';
+        
+        // Feature 1
+        echo '<div style="padding: 20px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center;">';
+        echo '<div style="width: 50px; height: 50px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 20px;">⚙️</div>';
+        echo '<h4 style="color: #2d3748; margin-bottom: 10px;">Advanced Behavior Settings</h4>';
+        echo '<p style="color: #4a5568; font-size: 14px; margin: 0;">Control voting requirements, IP limits, login requirements, minimum sample sizes, and regional detection modes.</p>';
+        echo '</div>';
+        
+        // Feature 2
+        echo '<div style="padding: 20px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center;">';
+        echo '<div style="width: 50px; height: 50px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 20px;">📤</div>';
+        echo '<h4 style="color: #2d3748; margin-bottom: 10px;">Bulk CSV Upload</h4>';
+        echo '<p style="color: #4a5568; font-size: 14px; margin: 0;">Upload hundreds of items at once using CSV files with automatic image importing and category assignment.</p>';
+        echo '</div>';
+        
+        // Feature 3
+        echo '<div style="padding: 20px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center;">';
+        echo '<div style="width: 50px; height: 50px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 20px;">📊</div>';
+        echo '<h4 style="color: #2d3748; margin-bottom: 10px;">Results & Adjustments</h4>';
+        echo '<p style="color: #4a5568; font-size: 14px; margin: 0;">View detailed voting statistics and manually adjust vote counts for testing or balancing purposes.</p>';
+        echo '</div>';
+        
+        // Feature 4
+        echo '<div style="padding: 20px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center;">';
+        echo '<div style="width: 50px; height: 50px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 20px;">🌍</div>';
+        echo '<h4 style="color: #2d3748; margin-bottom: 10px;">Custom Region Management</h4>';
+        echo '<p style="color: #4a5568; font-size: 14px; margin: 0;">Create unlimited custom regions with full geographic targeting and Cloudflare integration support.</p>';
+        echo '</div>';
+        
+        echo '</div>';
+        echo '</div>';
+        
+        echo '<div class="card" style="max-width: 800px; padding: 25px; margin-top: 20px; text-align: center; background: #f7fafc;">';
+        echo '<h3 style="color: #2d3748; margin-bottom: 15px;">Need Help?</h3>';
+        echo '<p style="color: #4a5568; margin-bottom: 20px;">Questions about PicPoll Pro? Get in touch with our support team.</p>';
+        echo '<a href="mailto:hi@leadmuffin.com" class="button" style="background: #2d3748; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Contact Support</a>';
+        echo '</div>';
+        
+        echo '</div>';
+    }
+
     /* === Shortcode === */
     public function shortcode_render($atts = array(), $content = '') {
         $atts = shortcode_atts(array(
@@ -995,16 +1026,14 @@ class Vote_Game_Plugin {
 
         $o = get_option('vg_options', array());
 
-        // Regions map
-        $regions_map = array();
-        if (!empty($o['regions_json'])) {
-            $arr = json_decode($o['regions_json'], true);
-            if (is_array($arr)) {
-                foreach ($arr as $r) {
-                    if (!empty($r['code']) && !empty($r['label'])) $regions_map[$r['code']] = $r['label'];
-                }
-            }
-        }
+        // Fixed regions map
+        $regions_map = array(
+            'US' => 'United States',
+            'CA' => 'Canada', 
+            'UK' => 'United Kingdom',
+            'JP' => 'Japan'
+        );
+        
         if (!empty($atts['regions'])) {
             $regions_map = array();
             $parts = array_filter(array_map('trim', explode('|', $atts['regions'])));
@@ -1020,148 +1049,4 @@ class Vote_Game_Plugin {
 
         // Enqueue assets only here
         wp_enqueue_style('vg-front', plugins_url('assets/embeddable.css', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.css'));
-        wp_enqueue_script('vg-front', plugins_url('assets/embeddable.js', __FILE__), array(), @filemtime(__DIR__.'/assets/embeddable.js'), true);
-
-        // Unique scope class and style variables
-        $scope = 'fvg-scope-' . wp_generate_uuid4();
-        $bar_h  = isset($o['bar_height']) ? intval($o['bar_height']) : 12;
-        $radius = isset($o['card_radius']) ? intval($o['card_radius']) : 16;
-        $title  = isset($o['title_size']) ? intval($o['title_size']) : 18;
-        $border = isset($o['border_thickness']) ? intval($o['border_thickness']) : 4;
-        $font   = isset($o['font_family']) ? $o['font_family'] : '';
-
-        // Build HTML
-        $style  = '<style>.' . esc_attr($scope) . ' { --fvg-accent: ' . esc_html($brand_color) . '; --fvg-bar-h: ' . esc_html($bar_h) . 'px; --fvg-card-radius: ' . esc_html($radius) . 'px; --fvg-title-size: ' . esc_html($title) . 'px; --fvg-border-thickness: ' . esc_html($border) . 'px; }';
-        if (!empty($font)) { $style .= '.' . esc_attr($scope) . ' .fvg-wrap{ font-family: ' . esc_html($font) . '; }'; }
-        $style .= '</style>';
-
-        $div  = '<div class="fvg-embed"';
-        $div .= ' data-scope="' . esc_attr($scope) . '"';
-        $div .= ' data-limit="' . esc_attr(intval($atts['limit'])) . '"';
-        $div .= ' data-random="' . esc_attr(intval($atts['random'])) . '"';
-        $div .= ' data-brand-color="' . esc_attr($brand_color) . '"';
-        $div .= ' data-category="' . esc_attr($atts['category']) . '"';
-        $div .= ' data-show-excerpt="' . esc_attr(intval($atts['show_excerpt'])) . '" data-region-mode="' . esc_attr(isset($o['region_mode']) ? $o['region_mode'] : 'none') . '"';
-        $div .= ' data-regions="' . esc_attr(wp_json_encode($regions_map)) . '">';
-        $div .= '<div class="fvg-loading" style="padding:12px;color:#555;">Loading...</div>';
-        $div .= '</div>';
-
-        $api  = esc_js(esc_url_raw(get_rest_url(null, 'vote-game/v1/')));
-        $ajax = esc_js(admin_url('admin-ajax.php'));
-        $script_cfg = '<script>window.FVG_SHORTCODE_CFG=window.FVG_SHORTCODE_CFG||{};(function(cfg){cfg.api="' . $api . '"; cfg.ajax="' . $ajax . '";})(window.FVG_SHORTCODE_CFG);</script>';
-
-        // Options JSON
-        $labels = $this->get_option_labels();
-        $opts_out = array(
-            'title_size'   => isset($o['title_size']) ? intval($o['title_size']) : 18,
-            'min_sample'   => isset($o['min_sample']) ? intval($o['min_sample']) : 0,
-            'hide_everyone'=> !empty($o['hide_everyone']) ? 1 : 0,
-            'font_family'  => isset($o['font_family']) ? $o['font_family'] : '',
-            'option_labels'=> $labels,
-            'region_mode' => isset($o['region_mode']) ? $o['region_mode'] : 'none',
-        );
-        $__vg_json = wp_json_encode($opts_out);
-        $script_opts = '<script id="vg-options-json" type="application/json">'.$__vg_json.'</script>';
-
-        return $style . $div . $script_cfg . $script_opts;
-    }
-
-    public function render_results_adjustments() {
-        if (!current_user_can('manage_options')) return;
-        global $wpdb;
-
-        // Handle save
-        if (!empty($_POST['vg_adj_nonce']) && wp_verify_nonce($_POST['vg_adj_nonce'], 'vg_adj_save')) {
-            $image_id = absint($_POST['image_id'] ?? 0);
-            $labels = $this->get_option_labels();
-            if ($image_id && is_array($_POST['overall_adj'] ?? null)) {
-                // Save overall adjustments
-                $wpdb->delete($this->adj2_table, array('image_id'=>$image_id));
-                foreach ($_POST['overall_adj'] as $i=>$val) {
-                    $i = intval($i); $val = intval($val);
-                    $wpdb->replace($this->adj2_table, array('image_id'=>$image_id, 'option_index'=>$i, 'adj'=>$val));
-                }
-            }
-            if ($image_id && is_array($_POST['region_adj'] ?? null)) {
-                // Save region adjustments
-                $wpdb->query($wpdb->prepare("DELETE FROM {$this->region_adj2_table} WHERE image_id=%d", $image_id));
-                foreach ($_POST['region_adj'] as $code=>$row) {
-                    $code = strtoupper(substr(preg_replace('/[^A-Za-z0-9_-]/','', $code), 0, 10));
-                    foreach ($row as $i=>$val) {
-                        $i=intval($i); $val=intval($val);
-                        $wpdb->replace($this->region_adj2_table, array('country'=>$code,'image_id'=>$image_id,'option_index'=>$i,'adj'=>$val));
-                    }
-                }
-            }
-            echo '<div class="notice notice-success"><p>Adjustments saved.</p></div>';
-        }
-
-        // Pick item
-        $items = get_posts(array('post_type'=>'vote_item','numberposts'=>-1,'orderby'=>'date','order'=>'DESC'));
-        $image_id = isset($_GET['image_id']) ? absint($_GET['image_id']) : 0;
-        if (!$image_id && !empty($items)) $image_id = $items[0]->ID;
-
-        $labels = $this->get_option_labels();
-
-        echo '<div class="wrap"><h1>'.esc_html__('Results & Adjustments','vote-game').'</h1>';
-        echo '<form method="get"><input type="hidden" name="page" value="vg_results">';
-        echo '<label>Select item: <select name="image_id" onchange="this.form.submit()">';
-        foreach ($items as $it) {
-            echo '<option value="'.$it->ID.'"'.selected($image_id, $it->ID, false).'>'.esc_html(get_the_title($it)).'</option>';
-        }
-        echo '</select></label></form>';
-
-        if ($image_id) {
-            // Fetch current stats
-            $overall = $this->compute_stats($image_id, null);
-            $o_counts = $overall['counts'];
-            $regions = array();
-            $o = get_option('vg_options', array());
-            $region_map = array();
-            if (!empty($o['regions_json'])) {
-                $tmp = json_decode($o['regions_json'], true);
-                if (is_array($tmp)) { foreach ($tmp as $r){ $region_map[$r['code']] = $r['label']; } }
-            }
-            echo '<h2>Overall</h2>';
-            echo '<form method="post">'; wp_nonce_field('vg_adj_save','vg_adj_nonce');
-            echo '<input type="hidden" name="image_id" value="'.$image_id.'">';
-            echo '<table class="widefat striped"><thead><tr><th>Option</th><th>Count (including adj)</th><th>Adjustment (+/-)</th></tr></thead><tbody>';
-            for ($i=0;$i<count($labels);$i++){
-                $count = isset($o_counts[$i]) ? intval($o_counts[$i]) : 0;
-                echo '<tr><td>'.esc_html($labels[$i]).'</td><td>'.$count.'</td><td><input type="number" name="overall_adj['.$i.']" value="0" step="1"></td></tr>';
-            }
-            echo '</tbody></table>';
-
-            echo '<h2 style="margin-top:20px;">Per Region</h2>';
-            if (!empty($region_map)) {
-                foreach ($region_map as $code=>$label) {
-                    $rs = $this->compute_stats($image_id, $code);
-                    echo '<h3>'.esc_html($label).' ('.esc_html($code).')</h3>';
-                    echo '<table class="widefat striped"><thead><tr><th>Option</th><th>Count (including adj)</th><th>Adjustment (+/-)</th></tr></thead><tbody>';
-                    for ($i=0;$i<count($labels);$i++){
-                        $count = isset($rs['counts'][$i]) ? intval($rs['counts'][$i]) : 0;
-                        echo '<tr><td>'.esc_html($labels[$i]).'</td><td>'.$count.'</td><td><input type="number" name="region_adj['.esc_attr($code).']['.$i.']" value="0" step="1"></td></tr>';
-                    }
-                    echo '</tbody></table>';
-                }
-            } else {
-                echo '<p><em>No regions configured.</em></p>';
-            }
-            submit_button('Save Adjustments');
-            echo '</form>';
-        }
-        echo '</div>';
-    }
-
-    private function get_ip() {
-        foreach (array('HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR') as $k) {
-            if (!empty($_SERVER[$k])) {
-                $ip_list = explode(',', $_SERVER[$k]);
-                return trim($ip_list[0]);
-            }
-        }
-        return '';
-    }
-}
-
-Vote_Game_Plugin::instance();
+        wp_enqueue_script('vg-front', plugins_url('assets/embeddable.js', __FILE
