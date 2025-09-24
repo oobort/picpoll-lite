@@ -693,6 +693,9 @@ class Vote_Game_Plugin {
         echo '<li>JP - Japan</li>';
         echo '</ul>';
         echo '<p style="margin-top: 10px; color: #666; font-style: italic;">Region mode is set to "Prompt user at start"</p>';
+        echo '<p style="margin-top: 15px; padding: 12px; background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 4px; color: #0066cc;">';
+        echo 'To add or edit the regions and to enable automatic geotracking, upgrade to <a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="color: #0066cc; text-decoration: underline; font-weight: 600;">PicPoll Pro</a>';
+        echo '</p>';
         echo '</div>';
     }
 
