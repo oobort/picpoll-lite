@@ -743,7 +743,9 @@ class Vote_Game_Plugin {
         echo '<div class="wrap">';
         echo '<h1>'.esc_html__('Behavior Settings','vote-game').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
-        echo '<img src="'.plugins_url('assets/behavior.png', __FILE__).'" alt="Behavior Settings" style="max-width: 100%; height: auto;" />';
+        echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
+        echo '<img src="'.plugins_url('assets/behavior.png', __FILE__).'" alt="Behavior Settings" style="width: auto; height: auto;" />';
+        echo '</a>';
         echo '</div>';
         echo '</div>';
     }
@@ -808,7 +810,9 @@ class Vote_Game_Plugin {
         echo '<div class="wrap">';
         echo '<h1>'.esc_html__('Bulk Upload','vote-game').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
-        echo '<img src="'.plugins_url('assets/bulk.png', __FILE__).'" alt="Bulk Upload" style="max-width: 100%; height: auto;" />';
+        echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
+        echo '<img src="'.plugins_url('assets/bulk.png', __FILE__).'" alt="Bulk Upload" style="width: auto; height: auto;" />';
+        echo '</a>';
         echo '</div>';
         echo '</div>';
     }
@@ -898,7 +902,9 @@ class Vote_Game_Plugin {
         echo '<div class="wrap">';
         echo '<h1>'.esc_html__('Results & Adjustments','vote-game').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
-        echo '<img src="'.plugins_url('assets/adjustments.png', __FILE__).'" alt="Results & Adjustments" style="max-width: 100%; height: auto;" />';
+        echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
+        echo '<img src="'.plugins_url('assets/adjustments.png', __FILE__).'" alt="Results & Adjustments" style="width: auto; height: auto;" />';
+        echo '</a>';
         echo '</div>';
         echo '</div>';
     }
