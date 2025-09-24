@@ -1,0 +1,21 @@
+/* Vote Game styles */
+.fvg-img { border: var(--fvg-border-thickness, 4px) solid var(--fvg-accent, #FF7150); border-radius: var(--fvg-card-radius, 16px); width: 100%; height: auto; display:block; }
+.fvg-wrap { max-width: 700px; margin: 24px auto; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+.fvg-card { background:#fff; border:1px solid #eee; border-radius: var(--fvg-card-radius, 16px); box-shadow:0 6px 20px rgba(0,0,0,.06); overflow:hidden; }
+.fvg-stage { padding:16px; }
+.fvg-title { margin:12px 4px 4px; font-weight:700; font-size: var(--fvg-title-size, 18px); }
+.fvg-excerpt { margin:0 4px 8px; color:#555; font-size:14px; }
+.fvg-choices { display:grid; gap:10px; margin:12px 0 6px; }
+.fvg-btn { display:inline-block; width:100%; border:1px solid #ddd; background:#fff; padding:12px 14px; border-radius:12px; cursor:pointer; font-weight:700; }
+.fvg-btn:hover { background:#fff; border-color:#ccc; }
+.fvg-btn:active { transform:translateY(1px); }
+.fvg-result { margin-top:12px; }
+.fvg-bars { display:grid; gap:8px; margin-top:8px; }
+.fvg-bar { height: var(--fvg-bar-h, 12px); background:#eee; border-radius:999px; overflow:hidden; position:relative; }
+.fvg-bar > span { display:block; height:100%; width:0%; background: var(--fvg-accent, #FF7150); transition:width .6s ease; }
+.fvg-bar-label { display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px; }
+.fvg-next { margin-top:14px; display:inline-block; background:#111827; color:#fff; border:0; border-radius:10px; padding:10px 14px; cursor:pointer; }
+.fvg-progress { margin-top:10px; color:#666; font-size:13px; text-align:center; }
+.fvg-section-title { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-weight:800; font-size:18px; }
+.fvg-section-sub { font-size:13px; color:#555; font-weight:700; }
+.fvg-region-card { background:#f9fafb; border:1px solid #e6e8eb; border-radius:12px; padding:12px; margin-top:12px; }

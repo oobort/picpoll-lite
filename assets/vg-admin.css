@@ -1,0 +1,359 @@
+/* PicPoll Admin Styles - Clean Professional Greyscale Theme */
+
+/* === Color Variables === */
+:root {
+    --pp-primary: #2d3748;
+    --pp-secondary: #4a5568;
+    --pp-light: #718096;
+    --pp-lighter: #a0aec0;
+    --pp-lightest: #e2e8f0;
+    --pp-bg: #f7fafc;
+    --pp-white: #ffffff;
+    --pp-success: #38a169;
+    --pp-warning: #d69e2e;
+    --pp-danger: #e53e3e;
+    --pp-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --pp-shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* === Main Admin Container === */
+.wrap h1 {
+    color: var(--pp-primary);
+    font-weight: 600;
+    margin-bottom: 24px;
+    font-size: 28px;
+    border-bottom: 2px solid var(--pp-lightest);
+    padding-bottom: 12px;
+}
+
+/* === Cards & Containers === */
+.card {
+    background: var(--pp-white);
+    border: 1px solid var(--pp-lightest);
+    border-radius: 8px;
+    box-shadow: var(--pp-shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+/* === Form Styling === */
+.form-table th {
+    color: var(--pp-primary);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 16px 10px 16px 0;
+    width: 200px;
+}
+
+.form-table td {
+    padding: 16px 10px;
+}
+
+/* === Input Controls === */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+select,
+textarea {
+    border: 2px solid var(--pp-lightest);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: var(--pp-white);
+    color: var(--pp-primary);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--pp-secondary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(45, 55, 72, 0.1);
+}
+
+/* === Buttons === */
+.button {
+    background: var(--pp-white);
+    border: 2px solid var(--pp-lightest);
+    color: var(--pp-secondary);
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.button:hover {
+    border-color: var(--pp-light);
+    color: var(--pp-primary);
+    background: var(--pp-bg);
+}
+
+.button-primary {
+    background: var(--pp-primary);
+    color: var(--pp-white);
+    border-color: var(--pp-primary);
+}
+
+.button-primary:hover {
+    background: var(--pp-secondary);
+    border-color: var(--pp-secondary);
+    color: var(--pp-white);
+}
+
+/* === Checkboxes === */
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--pp-primary);
+    margin-right: 8px;
+}
+
+/* === Admin Notice Styling === */
+.notice {
+    border-left: 4px solid var(--pp-primary);
+    background: var(--pp-white);
+    box-shadow: var(--pp-shadow);
+    border-radius: 0 4px 4px 0;
+}
+
+.notice-info {
+    border-left-color: var(--pp-secondary);
+}
+
+.notice-success {
+    border-left-color: var(--pp-success);
+}
+
+.notice-warning {
+    border-left-color: var(--pp-warning);
+}
+
+.notice-error {
+    border-left-color: var(--pp-danger);
+}
+
+/* === Region & Options UI === */
+#vg-regions-ui .vg-row, 
+#vg-options-ui .vg-row { 
+    display: flex; 
+    gap: 12px; 
+    margin-bottom: 12px; 
+    align-items: center;
+    background: var(--pp-bg);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--pp-lightest);
+}
+
+#vg-regions-ui .vg-row:hover,
+#vg-options-ui .vg-row:hover {
+    background: var(--pp-white);
+    border-color: var(--pp-lighter);
+}
+
+#vg-regions-ui .vg-row input { 
+    width: 220px; 
+    flex: 1;
+}
+
+#vg-options-ui .vg-row input { 
+    width: 380px; 
+    flex: 1;
+}
+
+#vg-regions-ui .vg-row .vg-add, 
+#vg-regions-ui .vg-row .vg-del,
+#vg-options-ui .vg-row .vg-add, 
+#vg-options-ui .vg-row .vg-del { 
+    width: 36px; 
+    height: 36px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vg-add {
+    background: var(--pp-success);
+    color: var(--pp-white);
+    border-color: var(--pp-success);
+}
+
+.vg-add:hover {
+    background: #2f855a;
+    border-color: #2f855a;
+}
+
+.vg-del {
+    background: var(--pp-danger);
+    color: var(--pp-white);
+    border-color: var(--pp-danger);
+}
+
+.vg-del:hover {
+    background: #c53030;
+    border-color: #c53030;
+}
+
+/* === Tables === */
+.widefat {
+    border: 1px solid var(--pp-lightest);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--pp-shadow);
+}
+
+.widefat th {
+    background: var(--pp-bg);
+    color: var(--pp-primary);
+    font-weight: 600;
+    padding: 16px;
+    border-bottom: 2px solid var(--pp-lightest);
+}
+
+.widefat td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--pp-lightest);
+}
+
+.striped tr:nth-child(even) {
+    background: var(--pp-bg);
+}
+
+/* === Shortcode Builder === */
+#b_sc {
+    background: var(--pp-bg);
+    color: var(--pp-primary);
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--pp-lightest);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    word-break: break-all;
+    display: inline-block;
+    margin-right: 12px;
+}
+
+#vg-preview {
+    background: var(--pp-white);
+    border: 2px dashed var(--pp-lighter);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+/* === Menu Icon Styling === */
+.dashicons-carrot:before {
+    color: var(--pp-secondary);
+}
+
+/* === Description Text === */
+.description {
+    color: var(--pp-light);
+    font-size: 13px;
+    font-style: italic;
+    margin-top: 4px;
+}
+
+.description strong {
+    color: var(--pp-secondary);
+    font-style: normal;
+}
+
+.description a {
+    color: var(--pp-secondary);
+    text-decoration: underline;
+}
+
+.description a:hover {
+    color: var(--pp-primary);
+}
+
+/* === Section Headers === */
+h2, h3 {
+    color: var(--pp-primary);
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+h3 {
+    font-size: 18px;
+    border-bottom: 1px solid var(--pp-lightest);
+    padding-bottom: 8px;
+}
+
+/* === File Upload Styling === */
+input[type="file"] {
+    padding: 8px;
+    border: 2px dashed var(--pp-lighter);
+    border-radius: 6px;
+    background: var(--pp-bg);
+    width: 100%;
+    max-width: 400px;
+}
+
+input[type="file"]:hover {
+    border-color: var(--pp-light);
+    background: var(--pp-white);
+}
+
+/* === Select Dropdown === */
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23718096'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
+}
+
+/* === Responsive Design === */
+@media (max-width: 768px) {
+    #vg-regions-ui .vg-row,
+    #vg-options-ui .vg-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #vg-regions-ui .vg-row input,
+    #vg-options-ui .vg-row input {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    .form-table th,
+    .form-table td {
+        display: block;
+        width: 100%;
+        padding: 8px 0;
+    }
+}
+
+/* === Animation === */
+* {
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+/* === Loading States === */
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* === Focus Indicators === */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid var(--pp-secondary);
+    outline-offset: 2px;
+}
