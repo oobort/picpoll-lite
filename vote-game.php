@@ -46,7 +46,10 @@ class Vote_Game_Plugin {
         // Ajax preview for shortcode builder
         add_action('wp_ajax_do_shortcode', function(){
             if (!current_user_can('manage_options')) { wp_die(''); }
-            $sc = isset($_POST['shortcode']) ? wp_unslash($_POST['shortcode']) : '';
+            if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'shortcode_preview')) {
+                wp_die('Invalid nonce');
+            }
+            $sc = isset($_POST['shortcode']) ? sanitize_text_field(wp_unslash($_POST['shortcode'])) : '';
             echo do_shortcode($sc);
             wp_die();
         });
@@ -189,13 +192,17 @@ class Vote_Game_Plugin {
         $labels = $this->get_option_labels();
         $n = count($labels);
         $image_id = absint($image_id);
-        $where = $wpdb->prepare("image_id = %d", $image_id);
-        $params = array();
+        
         if (!empty($countryCode)) {
             $countryCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string)$countryCode), 0, 10));
-            $where .= $wpdb->prepare(" AND country = %s", $countryCode);
+            $table_name = $this->table;
+            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$table_name}` WHERE image_id = %d AND country = %s GROUP BY choice", $image_id, $countryCode);
+        } else {
+            $table_name = $this->table;
+            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$table_name}` WHERE image_id = %d GROUP BY choice", $image_id);
         }
-        $rows = $wpdb->get_results("SELECT choice, COUNT(*) c FROM {$this->table} WHERE $where GROUP BY choice", ARRAY_A);
+        
+        $rows = $wpdb->get_results($sql, ARRAY_A);
         $counts = array_fill(0, $n, 0);
         foreach ($rows as $r) {
             $i = intval($r['choice']);
@@ -203,9 +210,11 @@ class Vote_Game_Plugin {
         }
         // adjustments
         if (!empty($countryCode)) {
-            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM {$this->region_adj2_table} WHERE country=%s AND image_id=%d", $countryCode, $image_id), ARRAY_A);
+            $region_table = $this->region_adj2_table;
+            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$region_table}` WHERE country=%s AND image_id=%d", $countryCode, $image_id), ARRAY_A);
         } else {
-            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM {$this->adj2_table} WHERE image_id=%d", $image_id), ARRAY_A);
+            $adj_table = $this->adj2_table;
+            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$adj_table}` WHERE image_id=%d", $image_id), ARRAY_A);
         }
         foreach ($rows2 as $r) {
             $idx = intval($r['option_index']); $adj = intval($r['adj']);
@@ -260,7 +269,12 @@ class Vote_Game_Plugin {
         $image_id = absint($req->get_param('image_id'));
         $choice   = max(0, intval($req->get_param('choice')));
         $country  = strtoupper(substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string)$req->get_param('country')), 0, 10));
-        if (!$country) { $o = get_option('vg_options', array()); if (!empty($o['region_mode']) && $o['region_mode']==='cloudflare') { $country = isset($_SERVER['HTTP_CF_IPCOUNTRY']) ? strtoupper(substr(preg_replace('/[^A-Za-z]/','', $_SERVER['HTTP_CF_IPCOUNTRY']),0,10)) : ''; } }
+        if (!$country) { 
+            $o = get_option('vg_options', array()); 
+            if (!empty($o['region_mode']) && $o['region_mode']==='cloudflare') { 
+                $country = isset($_SERVER['HTTP_CF_IPCOUNTRY']) ? strtoupper(substr(preg_replace('/[^A-Za-z]/','', sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_IPCOUNTRY']))),0,10)) : ''; 
+            } 
+        }
         if (!$image_id) return new WP_REST_Response(array('error'=>'Missing image_id'), 400);
 
         $o = get_option('vg_options', array());
@@ -270,11 +284,12 @@ class Vote_Game_Plugin {
         }
 
         $ip = $this->get_ip();
-        $ua = substr(isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '', 0, 255);
+        $ua = substr(isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '', 0, 255);
         $now = current_time('mysql');
 
+        $table_name = $this->table;
         $sql = $wpdb->prepare(
-            "INSERT INTO {$this->table} (image_id, choice, country, ip, ua, created_at)
+            "INSERT INTO `{$table_name}` (image_id, choice, country, ip, ua, created_at)
              VALUES (%d, %d, %s, %s, %s, %s)
              ON DUPLICATE KEY UPDATE choice=VALUES(choice), country=VALUES(country), ua=VALUES(ua), created_at=VALUES(created_at)",
             $image_id, $choice, $country, $ip, $ua, $now
@@ -318,8 +333,8 @@ class Vote_Game_Plugin {
 
     /* === AJAX fallbacks === */
     public function ajax_images() {
-        $limit = isset($_GET['limit']) ? max(1, min(200, intval($_GET['limit']))) : 30;
-        $random = isset($_GET['random']) ? (intval($_GET['random'])===1) : true;
+        $limit = isset($_GET['limit']) ? max(1, min(200, absint($_GET['limit']))) : 30;
+        $random = isset($_GET['random']) ? (absint($_GET['random'])===1) : true;
         $category = isset($_GET['category']) ? sanitize_text_field(wp_unslash($_GET['category'])) : '';
         $req = new WP_REST_Request('GET', '/picpoll-lite-main/v1/images');
         $req->set_param('limit', $limit);
@@ -341,7 +356,7 @@ class Vote_Game_Plugin {
     }
 
     public function ajax_dismiss_welcome() {
-        if (!wp_verify_nonce($_POST['nonce'], 'picpoll_dismiss_welcome')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'picpoll_dismiss_welcome')) {
             wp_die('Invalid nonce');
         }
         update_user_meta(get_current_user_id(), 'picpoll_welcome_dismissed', '1');
@@ -372,12 +387,12 @@ class Vote_Game_Plugin {
         if (!current_user_can('manage_options')) return;
         
         // Handle form submission
-        if (!empty($_POST['vg_item_nonce']) && wp_verify_nonce($_POST['vg_item_nonce'], 'vg_add_item')) {
+        if (!empty($_POST['vg_item_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['vg_item_nonce'])), 'vg_add_item')) {
             $this->handle_add_item();
         }
         
         // Handle delete action
-        if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['item_id']) && wp_verify_nonce($_GET['_wpnonce'], 'delete_item_' . $_GET['item_id'])) {
+        if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['item_id']) && isset($_GET['_wpnonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'delete_item_' . absint($_GET['item_id']))) {
             $this->handle_delete_item(absint($_GET['item_id']));
         }
         
@@ -512,6 +527,12 @@ class Vote_Game_Plugin {
     }
 
     private function handle_add_item() {
+        // Additional nonce verification (redundant but explicit)
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['vg_item_nonce'])), 'vg_add_item')) {
+            echo '<div class="notice notice-error"><p>' . esc_html__('Security check failed.', 'picpoll-lite-main') . '</p></div>';
+            return;
+        }
+        
         // Validate required fields
         if (empty($_POST['item_title'])) {
             echo '<div class="notice notice-error"><p>' . esc_html__('Title is required.', 'picpoll-lite-main') . '</p></div>';
@@ -524,10 +545,10 @@ class Vote_Game_Plugin {
         }
         
         // Sanitize inputs
-        $title = sanitize_text_field($_POST['item_title']);
-        $excerpt = sanitize_textarea_field($_POST['item_excerpt']);
+        $title = sanitize_text_field(wp_unslash($_POST['item_title']));
+        $excerpt = isset($_POST['item_excerpt']) ? sanitize_textarea_field(wp_unslash($_POST['item_excerpt'])) : '';
         $categories = isset($_POST['item_categories']) && is_array($_POST['item_categories']) 
-            ? array_map('absint', $_POST['item_categories']) 
+            ? array_map('absint', wp_unslash($_POST['item_categories'])) 
             : array();
         
         // Create the post
@@ -669,7 +690,7 @@ class Vote_Game_Plugin {
                     $(document).on("click", "#picpoll-welcome-notice .notice-dismiss", function() {
                         $.post(ajaxurl, {
                             action: "picpoll_dismiss_welcome",
-                            nonce: "'.wp_create_nonce('picpoll_dismiss_welcome').'"
+                            nonce: "'.esc_js(wp_create_nonce('picpoll_dismiss_welcome')).'"
                         });
                     });
                 });
@@ -841,7 +862,7 @@ class Vote_Game_Plugin {
         if (!empty($cats) && !is_wp_error($cats)) {
             foreach ($cats as $t) {
                 $slug = esc_attr($t->slug); $name = esc_html($t->name);
-                echo '<label style="display:inline-block;margin-right:12px;"><input type="checkbox" class="b_cat" value="'.$slug.'"> '.$name.'</label>';
+                echo '<label style="display:inline-block;margin-right:12px;"><input type="checkbox" class="b_cat" value="'.esc_attr($slug).'"> '.esc_html($name).'</label>';
             }
         } else {
             echo '<em>No categories yet.</em>';
@@ -850,7 +871,7 @@ class Vote_Game_Plugin {
         echo '<tr><th>Regions to include</th><td>';
         foreach ($regions as $r) {
             $code = esc_html($r['code']); $label = esc_html($r['label']);
-            echo '<label style="display:inline-block;margin-right:12px;"><input type="checkbox" class="b_region" value="'.$code.'"> '.$label.' ('.$code.')</label>';
+            echo '<label style="display:inline-block;margin-right:12px;"><input type="checkbox" class="b_region" value="'.esc_attr($code).'"> '.esc_html($label).' ('.esc_html($code).')</label>';
         }
         echo '</td></tr>';
         echo '</tbody></table>';
@@ -858,6 +879,7 @@ class Vote_Game_Plugin {
         echo '<p><button type="button" class="button button-primary" id="b_preview">Preview Below</button></p>';
         echo '<div id="vg-preview" style="background:#fff; padding:12px; border:1px solid #e5e5e5; border-radius:8px;">(preview will appear here)</div>';
         echo '</div>';
+        $nonce = wp_create_nonce('shortcode_preview');
         echo '<script>
           (function(){
             function build(){
@@ -891,6 +913,7 @@ class Vote_Game_Plugin {
               var data = new FormData();
               data.append("action", "do_shortcode");
               data.append("shortcode", sc);
+              data.append("nonce", "'.esc_js($nonce).'");
               fetch(ajaxurl, {method:"POST", body:data, credentials:"same-origin"}).then(function(r){return r.text();}).then(function(html){
                 document.getElementById("vg-preview").innerHTML = html;
                 if (window.FVG_initEmbeds) { try{ window.FVG_initEmbeds(); }catch(e){} }
@@ -1053,7 +1076,7 @@ class Vote_Game_Plugin {
     private function get_ip() {
         foreach (array('HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR') as $k) {
             if (!empty($_SERVER[$k])) {
-                $ip_list = explode(',', $_SERVER[$k]);
+                $ip_list = explode(',', sanitize_text_field(wp_unslash($_SERVER[$k])));
                 return trim($ip_list[0]);
             }
         }
