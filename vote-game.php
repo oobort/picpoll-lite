@@ -438,7 +438,7 @@ class Vote_Game_Plugin {
             echo '</div>';
         } else {
             echo '<p>' . esc_html__('No categories available.', 'picpoll-lite-main') . ' ';
-            echo '<a href="' . admin_url('edit-tags.php?taxonomy=vote_category&post_type=vote_item') . '">' . esc_html__('Create categories', 'picpoll-lite-main') . '</a></p>';
+            echo '<a href="' . esc_url(admin_url('edit-tags.php?taxonomy=vote_category&post_type=vote_item')) . '">' . esc_html__('Create categories', 'picpoll-lite-main') . '</a></p>';
         }
         echo '<p class="description">' . esc_html__('Select one or more categories for this item.', 'picpoll-lite-main') . '</p>';
         echo '</td>';
@@ -495,7 +495,7 @@ class Vote_Game_Plugin {
                 echo '<td>' . esc_html(implode(', ', $category_names)) . '</td>';
                 echo '<td>' . esc_html(get_the_date('Y-m-d H:i', $item)) . '</td>';
                 echo '<td>';
-                echo '<a href="' . get_edit_post_link($item->ID) . '" class="button button-small">' . esc_html__('Edit', 'picpoll-lite-main') . '</a> ';
+                echo '<a href="' . esc_url(get_edit_post_link($item->ID)) . '" class="button button-small">' . esc_html__('Edit', 'picpoll-lite-main') . '</a> ';
                 $delete_url = wp_nonce_url(
                     admin_url('admin.php?page=vg_items&action=delete&item_id=' . $item->ID),
                     'delete_item_' . $item->ID
@@ -747,7 +747,7 @@ class Vote_Game_Plugin {
         echo '<h1>'.esc_html__('Behavior Settings','picpoll-lite-main').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
         echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
-        echo '<img src="'.plugins_url('assets/behavior.png', __FILE__).'" alt="Behavior Settings" style="width: auto; height: auto;" />';
+        echo '<img src="'.esc_url(plugins_url('assets/behavior.png', __FILE__)).'" alt="Behavior Settings" style="width: auto; height: auto;" />';
         echo '</a>';
         echo '</div>';
         echo '</div>';
@@ -814,7 +814,7 @@ class Vote_Game_Plugin {
         echo '<h1>'.esc_html__('Bulk Upload','picpoll-lite-main').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
         echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
-        echo '<img src="'.plugins_url('assets/bulk.png', __FILE__).'" alt="Bulk Upload" style="width: auto; height: auto;" />';
+        echo '<img src="'.esc_url(plugins_url('assets/bulk.png', __FILE__)).'" alt="Bulk Upload" style="width: auto; height: auto;" />';
         echo '</a>';
         echo '</div>';
         echo '</div>';
@@ -906,7 +906,7 @@ class Vote_Game_Plugin {
         echo '<h1>'.esc_html__('Results & Adjustments','picpoll-lite-main').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
         echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
-        echo '<img src="'.plugins_url('assets/adjustments.png', __FILE__).'" alt="Results & Adjustments" style="width: auto; height: auto;" />';
+        echo '<img src="'.esc_url(plugins_url('assets/adjustments.png', __FILE__)).'" alt="Results & Adjustments" style="width: auto; height: auto;" />';
         echo '</a>';
         echo '</div>';
         echo '</div>';
