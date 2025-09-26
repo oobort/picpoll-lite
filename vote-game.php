@@ -195,12 +195,11 @@ class Vote_Game_Plugin {
         
         if (!empty($countryCode)) {
             $countryCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string)$countryCode), 0, 10));
-            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$wpdb->prefix}vote_game_votes` WHERE image_id = %d AND country = %s GROUP BY choice", $image_id, $countryCode);
+            $rows = $wpdb->get_results($wpdb->prepare("SELECT choice, COUNT(*) c FROM {$wpdb->prefix}vote_game_votes WHERE image_id = %d AND country = %s GROUP BY choice", $image_id, $countryCode), ARRAY_A);
         } else {
-            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$wpdb->prefix}vote_game_votes` WHERE image_id = %d GROUP BY choice", $image_id);
+            $rows = $wpdb->get_results($wpdb->prepare("SELECT choice, COUNT(*) c FROM {$wpdb->prefix}vote_game_votes WHERE image_id = %d GROUP BY choice", $image_id), ARRAY_A);
         }
         
-        $rows = $wpdb->get_results($sql, ARRAY_A);
         $counts = array_fill(0, $n, 0);
         foreach ($rows as $r) {
             $i = intval($r['choice']);
@@ -208,9 +207,9 @@ class Vote_Game_Plugin {
         }
         // adjustments
         if (!empty($countryCode)) {
-            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$wpdb->prefix}vote_game_region_adjustments2` WHERE country=%s AND image_id=%d", $countryCode, $image_id), ARRAY_A);
+            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM {$wpdb->prefix}vote_game_region_adjustments2 WHERE country=%s AND image_id=%d", $countryCode, $image_id), ARRAY_A);
         } else {
-            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$wpdb->prefix}vote_game_adjustments2` WHERE image_id=%d", $image_id), ARRAY_A);
+            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM {$wpdb->prefix}vote_game_adjustments2 WHERE image_id=%d", $image_id), ARRAY_A);
         }
         foreach ($rows2 as $r) {
             $idx = intval($r['option_index']); $adj = intval($r['adj']);
@@ -283,13 +282,12 @@ class Vote_Game_Plugin {
         $ua = substr(isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '', 0, 255);
         $now = current_time('mysql');
 
-        $sql = $wpdb->prepare(
-            "INSERT INTO `{$wpdb->prefix}vote_game_votes` (image_id, choice, country, ip, ua, created_at)
+        $ok = $wpdb->query($wpdb->prepare(
+            "INSERT INTO {$wpdb->prefix}vote_game_votes (image_id, choice, country, ip, ua, created_at)
              VALUES (%d, %d, %s, %s, %s, %s)
              ON DUPLICATE KEY UPDATE choice=VALUES(choice), country=VALUES(country), ua=VALUES(ua), created_at=VALUES(created_at)",
             $image_id, $choice, $country, $ip, $ua, $now
-        );
-        $ok = $wpdb->query($sql);
+        ));
         if ($ok === false) return new WP_REST_Response(array('error'=>'DB error'), 500);
 
         $regionsParam = (string)$req->get_param('regions');
@@ -535,8 +533,8 @@ class Vote_Game_Plugin {
     }
 
     private function handle_add_item() {
-        // Additional nonce verification (redundant but explicit)
-        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['vg_item_nonce'])), 'vg_add_item')) {
+        // Validate nonce exists and is valid
+        if (!isset($_POST['vg_item_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['vg_item_nonce'])), 'vg_add_item')) {
             echo '<div class="notice notice-error"><p>' . esc_html__('Security check failed.', 'picpoll-lite-main') . '</p></div>';
             return;
         }
