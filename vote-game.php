@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: PicPoll Photo Voting Game
- * Text Domain: picpoll-lite-main
+ * Text Domain: picpoll-photo-voting-game
  * Description: Flexible photo voting game with regions, categories, dynamic vote options, styling options, and a shortcode builder.
  * Version: 1.8.14
  * Author: LeadMuffin
