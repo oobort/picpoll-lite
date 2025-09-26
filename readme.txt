@@ -4,7 +4,7 @@ Tags: voting, polls, photos, images, engagement, interactive, regions, categorie
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.8.13
+Stable tag: 1.8.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -202,6 +202,13 @@ The free version can be used on unlimited sites. PicPoll Pro licenses are per-si
 
 
 == Changelog ==
+
+= 1.8.14 =
+*Release Date: January 15, 2025*
+
+**Features**
+* Added readme.txt
+* Added screenshots
 
 = 1.8.13 =
 *Release Date: January 15, 2025*
