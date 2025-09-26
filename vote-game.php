@@ -195,11 +195,9 @@ class Vote_Game_Plugin {
         
         if (!empty($countryCode)) {
             $countryCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string)$countryCode), 0, 10));
-            $table_name = $this->table;
-            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$table_name}` WHERE image_id = %d AND country = %s GROUP BY choice", $image_id, $countryCode);
+            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$wpdb->prefix}vote_game_votes` WHERE image_id = %d AND country = %s GROUP BY choice", $image_id, $countryCode);
         } else {
-            $table_name = $this->table;
-            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$table_name}` WHERE image_id = %d GROUP BY choice", $image_id);
+            $sql = $wpdb->prepare("SELECT choice, COUNT(*) c FROM `{$wpdb->prefix}vote_game_votes` WHERE image_id = %d GROUP BY choice", $image_id);
         }
         
         $rows = $wpdb->get_results($sql, ARRAY_A);
@@ -210,11 +208,9 @@ class Vote_Game_Plugin {
         }
         // adjustments
         if (!empty($countryCode)) {
-            $region_table = $this->region_adj2_table;
-            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$region_table}` WHERE country=%s AND image_id=%d", $countryCode, $image_id), ARRAY_A);
+            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$wpdb->prefix}vote_game_region_adjustments2` WHERE country=%s AND image_id=%d", $countryCode, $image_id), ARRAY_A);
         } else {
-            $adj_table = $this->adj2_table;
-            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$adj_table}` WHERE image_id=%d", $image_id), ARRAY_A);
+            $rows2 = $wpdb->get_results($wpdb->prepare("SELECT option_index, adj FROM `{$wpdb->prefix}vote_game_adjustments2` WHERE image_id=%d", $image_id), ARRAY_A);
         }
         foreach ($rows2 as $r) {
             $idx = intval($r['option_index']); $adj = intval($r['adj']);
@@ -287,9 +283,8 @@ class Vote_Game_Plugin {
         $ua = substr(isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '', 0, 255);
         $now = current_time('mysql');
 
-        $table_name = $this->table;
         $sql = $wpdb->prepare(
-            "INSERT INTO `{$table_name}` (image_id, choice, country, ip, ua, created_at)
+            "INSERT INTO `{$wpdb->prefix}vote_game_votes` (image_id, choice, country, ip, ua, created_at)
              VALUES (%d, %d, %s, %s, %s, %s)
              ON DUPLICATE KEY UPDATE choice=VALUES(choice), country=VALUES(country), ua=VALUES(ua), created_at=VALUES(created_at)",
             $image_id, $choice, $country, $ip, $ua, $now
@@ -333,6 +328,17 @@ class Vote_Game_Plugin {
 
     /* === AJAX fallbacks === */
     public function ajax_images() {
+        // This endpoint is used for public voting, so nonce verification is optional
+        // Only verify nonce for admin requests
+        if (current_user_can('manage_options')) {
+            if (!isset($_GET['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['nonce'])), 'ajax_images_nonce')) {
+                // For admin requests, we require nonce, but for public voting we allow it
+                if (is_admin()) {
+                    wp_die('Invalid nonce');
+                }
+            }
+        }
+        
         $limit = isset($_GET['limit']) ? max(1, min(200, absint($_GET['limit']))) : 30;
         $random = isset($_GET['random']) ? (absint($_GET['random'])===1) : true;
         $category = isset($_GET['category']) ? sanitize_text_field(wp_unslash($_GET['category'])) : '';
@@ -345,6 +351,8 @@ class Vote_Game_Plugin {
     }
 
     public function ajax_vote() {
+        // This endpoint is used for public voting, so nonce verification would break functionality
+        // The REST API handles its own security
         $payload = json_decode(file_get_contents('php://input'), true);
         if (!is_array($payload)) $payload = array();
         $req = new WP_REST_Request('POST', '/picpoll-lite-main/v1/vote');
@@ -387,7 +395,7 @@ class Vote_Game_Plugin {
         if (!current_user_can('manage_options')) return;
         
         // Handle form submission
-        if (!empty($_POST['vg_item_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['vg_item_nonce'])), 'vg_add_item')) {
+        if (isset($_POST['vg_item_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['vg_item_nonce'])), 'vg_add_item')) {
             $this->handle_add_item();
         }
         
