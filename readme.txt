@@ -2,7 +2,7 @@
 Contributors: leadmuffin
 Tags: voting, polls, photos, images, engagement, interactive, regions, categories, game, gameify
 Requires at least: 5.0
-Tested up to: 6.4
+Tested up to: 6.8
 Requires PHP: 7.4
 Stable tag: 1.8.14
 License: GPLv2 or later
