@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: PicPoll Photo Voting Game
- * Text Domain: vote-game
+ * Text Domain: picpoll-lite-main
  * Description: Flexible photo voting game with regions, categories, dynamic vote options, styling options, and a shortcode builder.
  * Version: 1.8.13
  * Author: LeadMuffin
@@ -124,7 +124,7 @@ class Vote_Game_Plugin {
     /* === Content Model === */
     public function register_cpt_tax() {
         register_post_type('vote_item', array(
-            'label' => __('Items','vote-game'),
+            'label' => __('Items','picpoll-lite-main'),
             'public' => true,
             'show_ui' => true,
             'show_in_menu' => false, // Hide from main menu since we have our custom interface
@@ -134,7 +134,7 @@ class Vote_Game_Plugin {
             'publicly_queryable' => false,
         ));
         register_taxonomy('vote_category', 'vote_item', array(
-            'label' => __('Item Categories','vote-game'),
+            'label' => __('Item Categories','picpoll-lite-main'),
             'public' => true,
             'hierarchical' => true,
             'show_admin_column' => true,
@@ -150,17 +150,17 @@ class Vote_Game_Plugin {
 
     /* === REST === */
     public function register_rest() {
-        register_rest_route('vote-game/v1', '/images', array(
+        register_rest_route('picpoll-lite-main/v1', '/images', array(
             'methods'  => 'GET',
             'callback' => array($this, 'rest_images'),
             'permission_callback' => '__return_true'
         ));
-        register_rest_route('vote-game/v1', '/vote', array(
+        register_rest_route('picpoll-lite-main/v1', '/vote', array(
             'methods'  => 'POST',
             'callback' => array($this, 'rest_vote'),
             'permission_callback' => '__return_true'
         ));
-        register_rest_route('vote-game/v1', '/stats/(?P<image_id>\d+)', array(
+        register_rest_route('picpoll-lite-main/v1', '/stats/(?P<image_id>\d+)', array(
             'methods'  => 'GET',
             'callback' => array($this, 'rest_stats'),
             'permission_callback' => '__return_true'
@@ -321,7 +321,7 @@ class Vote_Game_Plugin {
         $limit = isset($_GET['limit']) ? max(1, min(200, intval($_GET['limit']))) : 30;
         $random = isset($_GET['random']) ? (intval($_GET['random'])===1) : true;
         $category = isset($_GET['category']) ? sanitize_text_field(wp_unslash($_GET['category'])) : '';
-        $req = new WP_REST_Request('GET', '/vote-game/v1/images');
+        $req = new WP_REST_Request('GET', '/picpoll-lite-main/v1/images');
         $req->set_param('limit', $limit);
         $req->set_param('random', $random ? 1 : 0);
         $req->set_param('category', $category);
@@ -332,7 +332,7 @@ class Vote_Game_Plugin {
     public function ajax_vote() {
         $payload = json_decode(file_get_contents('php://input'), true);
         if (!is_array($payload)) $payload = array();
-        $req = new WP_REST_Request('POST', '/vote-game/v1/vote');
+        $req = new WP_REST_Request('POST', '/picpoll-lite-main/v1/vote');
         foreach (array('image_id','choice','country','regions') as $k) {
             if (isset($payload[$k])) $req->set_param($k, $payload[$k]);
         }
@@ -350,22 +350,22 @@ class Vote_Game_Plugin {
 
     /* === Admin === */
     public function admin_menu() {
-        add_menu_page(__('PicPoll','vote-game'), __('PicPoll','vote-game'), 'manage_options', 'vg_settings', array($this, 'render_settings_styling'), 'dashicons-carrot', 56);
+        add_menu_page(__('PicPoll','picpoll-lite-main'), __('PicPoll','picpoll-lite-main'), 'manage_options', 'vg_settings', array($this, 'render_settings_styling'), 'dashicons-carrot', 56);
 
-        add_submenu_page('vg_settings', __('Styling','vote-game'), __('Styling','vote-game'), 'manage_options', 'vg_settings', array($this, 'render_settings_styling'));
-        add_submenu_page('vg_settings', __('Behavior','vote-game'), __('Behavior','vote-game'), 'manage_options', 'vg_behavior', array($this, 'render_settings_behavior'));
-        add_submenu_page('vg_settings', __('Regions','vote-game'), __('Regions','vote-game'), 'manage_options', 'vg_regions', array($this, 'render_settings_regions'));
+        add_submenu_page('vg_settings', __('Styling','picpoll-lite-main'), __('Styling','picpoll-lite-main'), 'manage_options', 'vg_settings', array($this, 'render_settings_styling'));
+        add_submenu_page('vg_settings', __('Behavior','picpoll-lite-main'), __('Behavior','picpoll-lite-main'), 'manage_options', 'vg_behavior', array($this, 'render_settings_behavior'));
+        add_submenu_page('vg_settings', __('Regions','picpoll-lite-main'), __('Regions','picpoll-lite-main'), 'manage_options', 'vg_regions', array($this, 'render_settings_regions'));
         
         // Change this line to point to our custom items page instead of the default post editor
-        add_submenu_page('vg_settings', __('Items','vote-game'), __('Items','vote-game'), 'manage_options', 'vg_items', array($this, 'render_items_page'));
+        add_submenu_page('vg_settings', __('Items','picpoll-lite-main'), __('Items','picpoll-lite-main'), 'manage_options', 'vg_items', array($this, 'render_items_page'));
         
-        add_submenu_page('vg_settings', __('Bulk Upload','vote-game'), __('Bulk Upload','vote-game'), 'manage_options', 'vg_upload', array($this, 'render_items_upload'));
-        add_submenu_page('vg_settings', __('Vote Options','vote-game'), __('Vote Options','vote-game'), 'manage_options', 'vg_options', array($this, 'render_vote_options'));
-        add_submenu_page('vg_settings', __('Shortcode Builder','vote-game'), __('Shortcode Builder','vote-game'), 'manage_options', 'vg_builder', array($this, 'render_shortcode_builder'));
-        add_submenu_page('vg_settings', __('Results & Adjustments','vote-game'), __('Results & Adjustments','vote-game'), 'manage_options', 'vg_results', array($this, 'render_results_adjustments'));
+        add_submenu_page('vg_settings', __('Bulk Upload','picpoll-lite-main'), __('Bulk Upload','picpoll-lite-main'), 'manage_options', 'vg_upload', array($this, 'render_items_upload'));
+        add_submenu_page('vg_settings', __('Vote Options','picpoll-lite-main'), __('Vote Options','picpoll-lite-main'), 'manage_options', 'vg_options', array($this, 'render_vote_options'));
+        add_submenu_page('vg_settings', __('Shortcode Builder','picpoll-lite-main'), __('Shortcode Builder','picpoll-lite-main'), 'manage_options', 'vg_builder', array($this, 'render_shortcode_builder'));
+        add_submenu_page('vg_settings', __('Results & Adjustments','picpoll-lite-main'), __('Results & Adjustments','picpoll-lite-main'), 'manage_options', 'vg_results', array($this, 'render_results_adjustments'));
         
         // Add PicPoll Pro upgrade page
-        add_submenu_page('vg_settings', __('PicPoll Pro','vote-game'), __('PicPoll Pro','vote-game'), 'manage_options', 'vg_pro', array($this, 'render_pro_upgrade'));
+        add_submenu_page('vg_settings', __('PicPoll Pro','picpoll-lite-main'), __('PicPoll Pro','picpoll-lite-main'), 'manage_options', 'vg_pro', array($this, 'render_pro_upgrade'));
     }
 
     public function render_items_page() {
@@ -382,7 +382,7 @@ class Vote_Game_Plugin {
         }
         
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('Items', 'vote-game') . '</h1>';
+        echo '<h1>' . esc_html__('Items', 'picpoll-lite-main') . '</h1>';
         
         // Add new item form
         $this->render_add_item_form();
@@ -397,7 +397,7 @@ class Vote_Game_Plugin {
         $categories = get_terms(array('taxonomy' => 'vote_category', 'hide_empty' => false));
         
         echo '<div class="card" style="max-width: 800px; margin-bottom: 20px;">';
-        echo '<h2>' . esc_html__('Add New Item', 'vote-game') . '</h2>';
+        echo '<h2>' . esc_html__('Add New Item', 'picpoll-lite-main') . '</h2>';
         echo '<form method="post" enctype="multipart/form-data">';
         wp_nonce_field('vg_add_item', 'vg_item_nonce');
         
@@ -405,27 +405,27 @@ class Vote_Game_Plugin {
         
         // Title field
         echo '<tr>';
-        echo '<th scope="row"><label for="item_title">' . esc_html__('Title', 'vote-game') . '</label></th>';
+        echo '<th scope="row"><label for="item_title">' . esc_html__('Title', 'picpoll-lite-main') . '</label></th>';
         echo '<td><input type="text" id="item_title" name="item_title" class="regular-text" required /></td>';
         echo '</tr>';
         
         // Excerpt field
         echo '<tr>';
-        echo '<th scope="row"><label for="item_excerpt">' . esc_html__('Excerpt', 'vote-game') . '</label></th>';
+        echo '<th scope="row"><label for="item_excerpt">' . esc_html__('Excerpt', 'picpoll-lite-main') . '</label></th>';
         echo '<td><textarea id="item_excerpt" name="item_excerpt" rows="3" cols="50" class="large-text"></textarea>';
-        echo '<p class="description">' . esc_html__('Optional short description of the item.', 'vote-game') . '</p></td>';
+        echo '<p class="description">' . esc_html__('Optional short description of the item.', 'picpoll-lite-main') . '</p></td>';
         echo '</tr>';
         
         // Image upload field
         echo '<tr>';
-        echo '<th scope="row"><label for="item_image">' . esc_html__('Image', 'vote-game') . '</label></th>';
+        echo '<th scope="row"><label for="item_image">' . esc_html__('Image', 'picpoll-lite-main') . '</label></th>';
         echo '<td><input type="file" id="item_image" name="item_image" accept="image/*" required />';
-        echo '<p class="description">' . esc_html__('Upload an image for this item.', 'vote-game') . '</p></td>';
+        echo '<p class="description">' . esc_html__('Upload an image for this item.', 'picpoll-lite-main') . '</p></td>';
         echo '</tr>';
         
         // Category field
         echo '<tr>';
-        echo '<th scope="row"><label for="item_categories">' . esc_html__('Categories', 'vote-game') . '</label></th>';
+        echo '<th scope="row"><label for="item_categories">' . esc_html__('Categories', 'picpoll-lite-main') . '</label></th>';
         echo '<td>';
         if (!empty($categories) && !is_wp_error($categories)) {
             echo '<div style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">';
@@ -437,16 +437,16 @@ class Vote_Game_Plugin {
             }
             echo '</div>';
         } else {
-            echo '<p>' . esc_html__('No categories available.', 'vote-game') . ' ';
-            echo '<a href="' . admin_url('edit-tags.php?taxonomy=vote_category&post_type=vote_item') . '">' . esc_html__('Create categories', 'vote-game') . '</a></p>';
+            echo '<p>' . esc_html__('No categories available.', 'picpoll-lite-main') . ' ';
+            echo '<a href="' . admin_url('edit-tags.php?taxonomy=vote_category&post_type=vote_item') . '">' . esc_html__('Create categories', 'picpoll-lite-main') . '</a></p>';
         }
-        echo '<p class="description">' . esc_html__('Select one or more categories for this item.', 'vote-game') . '</p>';
+        echo '<p class="description">' . esc_html__('Select one or more categories for this item.', 'picpoll-lite-main') . '</p>';
         echo '</td>';
         echo '</tr>';
         
         echo '</tbody></table>';
         
-        submit_button(__('Add Item', 'vote-game'));
+        submit_button(__('Add Item', 'picpoll-lite-main'));
         echo '</form>';
         echo '</div>';
     }
@@ -460,19 +460,19 @@ class Vote_Game_Plugin {
         ));
         
         echo '<div class="card" style="max-width: none;">';
-        echo '<h2>' . esc_html__('Existing Items', 'vote-game') . '</h2>';
+        echo '<h2>' . esc_html__('Existing Items', 'picpoll-lite-main') . '</h2>';
         
         if (empty($items)) {
-            echo '<p>' . esc_html__('No items found. Add your first item above.', 'vote-game') . '</p>';
+            echo '<p>' . esc_html__('No items found. Add your first item above.', 'picpoll-lite-main') . '</p>';
         } else {
             echo '<table class="widefat striped">';
             echo '<thead><tr>';
-            echo '<th>' . esc_html__('Image', 'vote-game') . '</th>';
-            echo '<th>' . esc_html__('Title', 'vote-game') . '</th>';
-            echo '<th>' . esc_html__('Excerpt', 'vote-game') . '</th>';
-            echo '<th>' . esc_html__('Categories', 'vote-game') . '</th>';
-            echo '<th>' . esc_html__('Date', 'vote-game') . '</th>';
-            echo '<th>' . esc_html__('Actions', 'vote-game') . '</th>';
+            echo '<th>' . esc_html__('Image', 'picpoll-lite-main') . '</th>';
+            echo '<th>' . esc_html__('Title', 'picpoll-lite-main') . '</th>';
+            echo '<th>' . esc_html__('Excerpt', 'picpoll-lite-main') . '</th>';
+            echo '<th>' . esc_html__('Categories', 'picpoll-lite-main') . '</th>';
+            echo '<th>' . esc_html__('Date', 'picpoll-lite-main') . '</th>';
+            echo '<th>' . esc_html__('Actions', 'picpoll-lite-main') . '</th>';
             echo '</tr></thead>';
             echo '<tbody>';
             
@@ -495,12 +495,12 @@ class Vote_Game_Plugin {
                 echo '<td>' . esc_html(implode(', ', $category_names)) . '</td>';
                 echo '<td>' . esc_html(get_the_date('Y-m-d H:i', $item)) . '</td>';
                 echo '<td>';
-                echo '<a href="' . get_edit_post_link($item->ID) . '" class="button button-small">' . esc_html__('Edit', 'vote-game') . '</a> ';
+                echo '<a href="' . get_edit_post_link($item->ID) . '" class="button button-small">' . esc_html__('Edit', 'picpoll-lite-main') . '</a> ';
                 $delete_url = wp_nonce_url(
                     admin_url('admin.php?page=vg_items&action=delete&item_id=' . $item->ID),
                     'delete_item_' . $item->ID
                 );
-                echo '<a href="' . esc_url($delete_url) . '" class="button button-small" onclick="return confirm(\'' . esc_js(__('Are you sure you want to delete this item?', 'vote-game')) . '\')">' . esc_html__('Delete', 'vote-game') . '</a>';
+                echo '<a href="' . esc_url($delete_url) . '" class="button button-small" onclick="return confirm(\'' . esc_js(__('Are you sure you want to delete this item?', 'picpoll-lite-main')) . '\')">' . esc_html__('Delete', 'picpoll-lite-main') . '</a>';
                 echo '</td>';
                 echo '</tr>';
             }
@@ -514,12 +514,12 @@ class Vote_Game_Plugin {
     private function handle_add_item() {
         // Validate required fields
         if (empty($_POST['item_title'])) {
-            echo '<div class="notice notice-error"><p>' . esc_html__('Title is required.', 'vote-game') . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('Title is required.', 'picpoll-lite-main') . '</p></div>';
             return;
         }
         
         if (empty($_FILES['item_image']['tmp_name'])) {
-            echo '<div class="notice notice-error"><p>' . esc_html__('Image is required.', 'vote-game') . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('Image is required.', 'picpoll-lite-main') . '</p></div>';
             return;
         }
         
@@ -541,7 +541,7 @@ class Vote_Game_Plugin {
         $post_id = wp_insert_post($post_data);
         
         if (is_wp_error($post_id)) {
-            echo '<div class="notice notice-error"><p>' . esc_html__('Error creating item: ', 'vote-game') . esc_html($post_id->get_error_message()) . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('Error creating item: ', 'picpoll-lite-main') . esc_html($post_id->get_error_message()) . '</p></div>';
             return;
         }
         
@@ -554,7 +554,7 @@ class Vote_Game_Plugin {
         
         if (isset($upload['error'])) {
             wp_delete_post($post_id, true);
-            echo '<div class="notice notice-error"><p>' . esc_html__('Image upload error: ', 'vote-game') . esc_html($upload['error']) . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('Image upload error: ', 'picpoll-lite-main') . esc_html($upload['error']) . '</p></div>';
             return;
         }
         
@@ -580,7 +580,7 @@ class Vote_Game_Plugin {
             wp_set_post_terms($post_id, $categories, 'vote_category');
         }
         
-        echo '<div class="notice notice-success"><p>' . esc_html__('Item added successfully!', 'vote-game') . '</p></div>';
+        echo '<div class="notice notice-success"><p>' . esc_html__('Item added successfully!', 'picpoll-lite-main') . '</p></div>';
     }
 
     private function handle_delete_item($item_id) {
@@ -588,7 +588,7 @@ class Vote_Game_Plugin {
         
         $post = get_post($item_id);
         if (!$post || $post->post_type !== 'vote_item') {
-            echo '<div class="notice notice-error"><p>' . esc_html__('Invalid item.', 'vote-game') . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('Invalid item.', 'picpoll-lite-main') . '</p></div>';
             return;
         }
         
@@ -602,9 +602,9 @@ class Vote_Game_Plugin {
         $result = wp_delete_post($item_id, true);
         
         if ($result) {
-            echo '<div class="notice notice-success"><p>' . esc_html__('Item deleted successfully!', 'vote-game') . '</p></div>';
+            echo '<div class="notice notice-success"><p>' . esc_html__('Item deleted successfully!', 'picpoll-lite-main') . '</p></div>';
         } else {
-            echo '<div class="notice notice-error"><p>' . esc_html__('Error deleting item.', 'vote-game') . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('Error deleting item.', 'picpoll-lite-main') . '</p></div>';
         }
     }
 
@@ -612,37 +612,37 @@ class Vote_Game_Plugin {
         register_setting('vg_options', 'vg_options', array('sanitize_callback' => array($this, 'sanitize_options')));
 
         // Styling
-        add_settings_section('vg_styling', __('Styling Options','vote-game'), function(){ echo '<p>Customize the front-end appearance.</p>'; }, 'vg_settings');
-        add_settings_field('accent_color', __('Accent color','vote-game'), function(){
+        add_settings_section('vg_styling', __('Styling Options','picpoll-lite-main'), function(){ echo '<p>Customize the front-end appearance.</p>'; }, 'vg_settings');
+        add_settings_field('accent_color', __('Accent color','picpoll-lite-main'), function(){
             $o = get_option('vg_options', array()); $val = isset($o['accent_color']) ? $o['accent_color'] : '#FF7150';
             echo '<input type="text" name="vg_options[accent_color]" value="'.esc_attr($val).'" class="regular-text" />';
         }, 'vg_settings', 'vg_styling');
-        add_settings_field('bar_height', __('Bar height (px)','vote-game'), function(){
+        add_settings_field('bar_height', __('Bar height (px)','picpoll-lite-main'), function(){
             $o = get_option('vg_options', array()); $val = isset($o['bar_height']) ? intval($o['bar_height']) : 12;
             echo '<input type="number" name="vg_options[bar_height]" value="'.esc_attr($val).'" min="6" max="40" />';
         }, 'vg_settings', 'vg_styling');
-        add_settings_field('card_radius', __('Card radius (px)','vote-game'), function(){
+        add_settings_field('card_radius', __('Card radius (px)','picpoll-lite-main'), function(){
             $o = get_option('vg_options', array()); $val = isset($o['card_radius']) ? intval($o['card_radius']) : 16;
             echo '<input type="number" name="vg_options[card_radius]" value="'.esc_attr($val).'" min="0" max="40" />';
         }, 'vg_settings', 'vg_styling');
-        add_settings_field('title_size', __('Title size (px)','vote-game'), function(){
+        add_settings_field('title_size', __('Title size (px)','picpoll-lite-main'), function(){
             $o = get_option('vg_options', array()); $val = isset($o['title_size']) ? intval($o['title_size']) : 18;
             echo '<input type="number" name="vg_options[title_size]" value="'.esc_attr($val).'" min="12" max="36" />';
         }, 'vg_settings', 'vg_styling');
-        add_settings_field('border_thickness', __('Border thickness (px)','vote-game'), function(){
+        add_settings_field('border_thickness', __('Border thickness (px)','picpoll-lite-main'), function(){
             $o = get_option('vg_options', array()); $val = isset($o['border_thickness']) ? intval($o['border_thickness']) : 4;
             echo '<input type="number" name="vg_options[border_thickness]" value="'.esc_attr($val).'" min="0" max="20" />';
         }, 'vg_settings', 'vg_styling');
-        add_settings_field('font_family', __('Custom font family','vote-game'), function(){
+        add_settings_field('font_family', __('Custom font family','picpoll-lite-main'), function(){
             $o = get_option('vg_options', array()); $val = isset($o['font_family']) ? $o['font_family'] : '';
             echo '<input type="text" name="vg_options[font_family]" value="'.esc_attr($val).'" class="regular-text" placeholder="e.g., Inter, system-ui" />';
         }, 'vg_settings', 'vg_styling');
 
         // Regions - Fixed region options
-        add_settings_section('vg_regions', __('Regions','vote-game'), function(){
+        add_settings_section('vg_regions', __('Regions','picpoll-lite-main'), function(){
             echo '<p>Region selection is configured for US, Canada, United Kingdom, and Japan.</p>';
         }, 'vg_regions');
-        add_settings_field('regions_json', __('Regions list','vote-game'), array($this, 'render_regions_field'), 'vg_regions', 'vg_regions');
+        add_settings_field('regions_json', __('Regions list','picpoll-lite-main'), array($this, 'render_regions_field'), 'vg_regions', 'vg_regions');
     }
 
     public function admin_assets($hook) {
@@ -736,7 +736,7 @@ class Vote_Game_Plugin {
     }
 
     public function render_settings_styling() {
-        echo '<div class="wrap"><h1>'.esc_html__('Styling Options','vote-game').'</h1>';
+        echo '<div class="wrap"><h1>'.esc_html__('Styling Options','picpoll-lite-main').'</h1>';
         echo '<form method="post" action="options.php">';
         settings_fields('vg_options'); do_settings_sections('vg_settings'); submit_button();
         echo '</form></div>';
@@ -744,7 +744,7 @@ class Vote_Game_Plugin {
     
     public function render_settings_behavior() {
         echo '<div class="wrap">';
-        echo '<h1>'.esc_html__('Behavior Settings','vote-game').'</h1>';
+        echo '<h1>'.esc_html__('Behavior Settings','picpoll-lite-main').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
         echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
         echo '<img src="'.plugins_url('assets/behavior.png', __FILE__).'" alt="Behavior Settings" style="width: auto; height: auto;" />';
@@ -754,7 +754,7 @@ class Vote_Game_Plugin {
     }
     
     public function render_settings_regions() {
-        echo '<div class="wrap"><h1>'.esc_html__('Regions','vote-game').'</h1>';
+        echo '<div class="wrap"><h1>'.esc_html__('Regions','picpoll-lite-main').'</h1>';
         echo '<form method="post" action="options.php">';
         settings_fields('vg_options'); do_settings_sections('vg_regions'); submit_button();
         echo '</form></div>';
@@ -763,7 +763,7 @@ class Vote_Game_Plugin {
     public function render_vote_options() {
         $o = get_option('vg_options', array());
         $json = isset($o['option_labels_json']) && $o['option_labels_json'] ? $o['option_labels_json'] : json_encode(array(array('text'=>'Vote Option 1')));
-        echo '<div class="wrap"><h1>'.esc_html__('Vote Options','vote-game').'</h1>';
+        echo '<div class="wrap"><h1>'.esc_html__('Vote Options','picpoll-lite-main').'</h1>';
         echo '<form method="post" action="options.php">';
         settings_fields('vg_options');
         echo '<input type="hidden" id="vg_option_labels_json" name="vg_options[option_labels_json]" value="'.esc_attr($json).'">';
@@ -811,7 +811,7 @@ class Vote_Game_Plugin {
 
     public function render_items_upload() {
         echo '<div class="wrap">';
-        echo '<h1>'.esc_html__('Bulk Upload','vote-game').'</h1>';
+        echo '<h1>'.esc_html__('Bulk Upload','picpoll-lite-main').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
         echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
         echo '<img src="'.plugins_url('assets/bulk.png', __FILE__).'" alt="Bulk Upload" style="width: auto; height: auto;" />';
@@ -830,7 +830,7 @@ class Vote_Game_Plugin {
             array('code'=>'JP','label'=>'Japan'),
         );
         $cats = get_terms(array('taxonomy'=>'vote_category','hide_empty'=>false));
-        echo '<div class="wrap"><h1>'.esc_html__('Shortcode Builder','vote-game').'</h1>';
+        echo '<div class="wrap"><h1>'.esc_html__('Shortcode Builder','picpoll-lite-main').'</h1>';
         echo '<div class="card" style="max-width:880px;padding:16px;">';
         echo '<table class="form-table"><tbody>';
         echo '<tr><th>Limit</th><td><input type="number" id="b_limit" value="30" min="1" max="200"> <span class="description">How many items to show.</span></td></tr>';
@@ -903,7 +903,7 @@ class Vote_Game_Plugin {
 
     public function render_results_adjustments() {
         echo '<div class="wrap">';
-        echo '<h1>'.esc_html__('Results & Adjustments','vote-game').'</h1>';
+        echo '<h1>'.esc_html__('Results & Adjustments','picpoll-lite-main').'</h1>';
         echo '<div style="text-align: center; padding: 40px;">';
         echo '<a href="https://leadmuffin.com/plugins/picpoll" target="_blank" style="display: inline-block; cursor: pointer;">';
         echo '<img src="'.plugins_url('assets/adjustments.png', __FILE__).'" alt="Results & Adjustments" style="width: auto; height: auto;" />';
@@ -1030,7 +1030,7 @@ class Vote_Game_Plugin {
         $div .= '<div class="fvg-loading" style="padding:12px;color:#555;">Loading...</div>';
         $div .= '</div>';
 
-        $api  = esc_js(esc_url_raw(get_rest_url(null, 'vote-game/v1/')));
+        $api  = esc_js(esc_url_raw(get_rest_url(null, 'picpoll-lite-main/v1/')));
         $ajax = esc_js(admin_url('admin-ajax.php'));
         $script_cfg = '<script>window.FVG_SHORTCODE_CFG=window.FVG_SHORTCODE_CFG||{};(function(cfg){cfg.api="' . $api . '"; cfg.ajax="' . $ajax . '";})(window.FVG_SHORTCODE_CFG);</script>';
 
